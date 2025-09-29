@@ -1,7 +1,8 @@
-import express, { NextFunction, type Request, type Response } from "express";
+import express, { type Request, type Response } from "express";
 import { router } from "./app/routes";
 import cors from "cors";
-import { envVars } from "./app/config/env";
+import { globalErrorHandler } from "./app/middlewares/globalErrorHandler";
+import { notFound } from "./app/middlewares/notFound";
 const app = express();
 
 app.use(express.json());
@@ -18,14 +19,10 @@ app.get("/", (req: Request, res: Response) => {
 
 // Global error handler
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unused-vars
-app.use((err: any, req: Request, res: Response, next: NextFunction) => {
-  res.status(500).json({
-    success: false,
-    message: `Something went wrong! ${err.message}`,
-    err,
-    stack: envVars.NODE_ENV === "development" ? err.stack : null,
-  });
-});
+app.use(globalErrorHandler);
+
+// Not found err
+
+app.use(notFound);
 
 export default app;
