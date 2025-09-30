@@ -26,7 +26,7 @@ const userSchema = new Schema<IUser>(
       lowercase: true,
       trim: true,
     },
-    password: { type: String, select: false },
+    password: { type: String },
     phone: { type: String, trim: true },
     address: { type: String, trim: true },
     picture: { type: String },

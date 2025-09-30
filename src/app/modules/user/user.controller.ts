@@ -4,16 +4,11 @@ import httpStatus from "http-status-codes";
 import { UserServices } from "./user.service";
 import { catchAsync } from "../../utils/catchAsync";
 import { sendResponse } from "../../utils/sendResponse";
-import AppError from "../../errorHelpers/AppError";
 
 // CREATE USER
 
 const createUser = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
-
-    
-    // throw new AppError(httpStatus.BAD_REQUEST, "Fake erro");
-    // // throw new Error("Fake error");
     const user = await UserServices.createUser(req.body);
 
     sendResponse(res, {
