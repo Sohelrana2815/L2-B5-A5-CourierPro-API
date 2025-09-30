@@ -4,11 +4,7 @@ import User from "./user.model";
 const createUser = (payload: Partial<IUser>) => {
   const { name, email, password } = payload;
 
-  const user = User.create({
-    name,
-    email,
-    password,
-  });
+  const user = User.create(payload);
 
   return user;
 };
