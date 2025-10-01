@@ -2,6 +2,7 @@ import { Server } from "http";
 import mongoose from "mongoose";
 import app from "./app";
 import { envVars } from "./app/config/env";
+import { seedAdmin } from "./app/utils/seedAdmin";
 
 let server: Server;
 
@@ -19,7 +20,10 @@ const startServer = async () => {
   }
 };
 
-startServer();
+(async () => {
+  startServer();
+  seedAdmin();
+})();
 
 // SIGTERM
 
@@ -88,5 +92,3 @@ process.on("uncaughtException", (err) => {
 // uncaught Exception
 
 // throw new Error("Uncaught Exception");
-
-

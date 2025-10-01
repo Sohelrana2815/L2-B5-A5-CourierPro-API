@@ -8,15 +8,56 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
-const createUser = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    try {
-    }
-    catch (err) {
-        console.log(err);
-        res.status(400).json({
-            message: `Something went wrong! ${err.message}`,
-            err,
-        });
-    }
-});
+exports.UserControllers = void 0;
+const http_status_codes_1 = __importDefault(require("http-status-codes"));
+const user_service_1 = require("./user.service");
+const catchAsync_1 = require("../../utils/catchAsync");
+const sendResponse_1 = require("../../utils/sendResponse");
+// CREATE USER
+const createUser = (0, catchAsync_1.catchAsync)((req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
+    const user = yield user_service_1.UserServices.createUser(req.body);
+    (0, sendResponse_1.sendResponse)(res, {
+        success: true,
+        statusCode: http_status_codes_1.default.CREATED,
+        message: "User created successfully✅",
+        data: user,
+    });
+}));
+// GET ALL USERS
+const getAllUsers = (0, catchAsync_1.catchAsync)((req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
+    const result = yield user_service_1.UserServices.getAllUsers();
+    (0, sendResponse_1.sendResponse)(res, {
+        success: true,
+        statusCode: http_status_codes_1.default.OK,
+        message: "All Users Retrieved successfully✅",
+        data: result.data,
+        meta: result.meta,
+    });
+}));
+// UPDATE USER
+const updateUser = (0, catchAsync_1.catchAsync)((req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
+    const userId = req.params.id;
+    // const token = req.headers.authorization;
+    // const verifiedToken = verifyToken(
+    //   token as string,
+    //   envVars.JWT_ACCESS_SECRET
+    // ) as JwtPayload;
+    const verifiedToken = req.user;
+    const payload = req.body;
+    const user = yield user_service_1.UserServices.updateUser(userId, payload, verifiedToken);
+    (0, sendResponse_1.sendResponse)(res, {
+        success: true,
+        statusCode: http_status_codes_1.default.OK,
+        message: "User Updated Successfully✅",
+        data: user,
+    });
+}));
+exports.UserControllers = {
+    createUser,
+    getAllUsers,
+    updateUser,
+};

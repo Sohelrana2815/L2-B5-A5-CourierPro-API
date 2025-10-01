@@ -15,6 +15,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const mongoose_1 = __importDefault(require("mongoose"));
 const app_1 = __importDefault(require("./app"));
 const env_1 = require("./app/config/env");
+const seedAdmin_1 = require("./app/utils/seedAdmin");
 let server;
 const startServer = () => __awaiter(void 0, void 0, void 0, function* () {
     try {
@@ -28,7 +29,10 @@ const startServer = () => __awaiter(void 0, void 0, void 0, function* () {
         console.log(err);
     }
 });
-startServer();
+(() => __awaiter(void 0, void 0, void 0, function* () {
+    startServer();
+    (0, seedAdmin_1.seedAdmin)();
+}))();
 // SIGTERM
 process.on("SIGTERM", () => {
     console.log("SIGTERM is received");

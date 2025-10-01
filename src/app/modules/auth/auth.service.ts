@@ -6,6 +6,8 @@ import bcryptjs from "bcryptjs";
 import { envVars } from "../../config/env";
 import { generateToken } from "../../utils/jwt";
 
+
+
 const credentialsLogin = async (payload: Partial<IUser>) => {
   const { email, password } = payload;
 
@@ -29,10 +31,11 @@ const credentialsLogin = async (payload: Partial<IUser>) => {
     email: isUserExist.email,
     role: isUserExist.role,
   };
+
   const accessToken = generateToken(
     jwtPayload,
     envVars.JWT_ACCESS_SECRET,
-    envVars.BCRYPT_SALT_ROUND
+    envVars.JWT_ACCESS_EXPIRES
   );
 
   return {
