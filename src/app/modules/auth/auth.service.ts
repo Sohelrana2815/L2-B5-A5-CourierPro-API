@@ -1,12 +1,15 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import AppError from "../../errorHelpers/AppError";
 import { IUser } from "../user/user.interface";
 import User from "../user/user.model";
 import httpStatus from "http-status-codes";
 import bcryptjs from "bcryptjs";
+import {
+  createNewAccessTokenWithRefreshToken,
+  createUserTokens,
+} from "../../utils/userTokens";
+import { JwtPayload } from "jsonwebtoken";
 import { envVars } from "../../config/env";
-import { generateToken } from "../../utils/jwt";
-
-
 
 const credentialsLogin = async (payload: Partial<IUser>) => {
   const { email, password } = payload;
@@ -26,23 +29,50 @@ const credentialsLogin = async (payload: Partial<IUser>) => {
     throw new AppError(httpStatus.BAD_REQUEST, "Incorrect password!");
   }
 
-  const jwtPayload = {
-    id: isUserExist._id,
-    email: isUserExist.email,
-    role: isUserExist.role,
-  };
+  const userTokens = createUserTokens(isUserExist);
 
-  const accessToken = generateToken(
-    jwtPayload,
-    envVars.JWT_ACCESS_SECRET,
-    envVars.JWT_ACCESS_EXPIRES
+  const { password: pass, ...rest } = isUserExist.toObject();
+
+  return {
+    accessToken: userTokens.accessToken,
+    refreshToken: userTokens.refreshToken,
+    user: rest,
+  };
+};
+
+const getNewAccessToken = async (refreshToken: string) => {
+  const newAccessToken = await createNewAccessTokenWithRefreshToken(
+    refreshToken
   );
 
   return {
-    accessToken,
+    accessToken: newAccessToken,
   };
+};
+const resetPassword = async (
+  decodedToken: JwtPayload,
+  oldPassword: string,
+  newPassword: string
+) => {
+  const user = (await User.findById(decodedToken.userId)) as JwtPayload;
+
+  const isOldPasswordMatched = await bcryptjs.compare(
+    oldPassword,
+    user.password
+  );
+
+  if (!isOldPasswordMatched) {
+    throw new AppError(httpStatus.BAD_REQUEST, "Incorrect old password!");
+  }
+  user.password = await bcryptjs.hash(
+    newPassword,
+    Number(envVars.BCRYPT_SALT_ROUND)
+  );
+  user.save();
 };
 
 export const AuthServices = {
   credentialsLogin,
+  getNewAccessToken,
+  resetPassword,
 };
