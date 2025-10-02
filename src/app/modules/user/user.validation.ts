@@ -4,7 +4,7 @@ import { IsActive, Role } from "./user.interface";
 export const createUserZodSchema = z.object({
   // Name
   name: z
-    .string({ error: "Name must be string" })
+    .string({ error: "Name must be string and required!" })
     .min(3, { error: "Name is too short. Minimum 3 characters long" })
     .max(50, { error: "Name is too long. Maximum 50 characters" }),
   // Email

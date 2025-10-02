@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import AppError from "../../errorHelpers/AppError";
 import { IAuthProvider, IUser, Role } from "./user.interface";
 import User from "./user.model";
@@ -12,9 +13,9 @@ const createUser = async (payload: Partial<IUser>) => {
 
   const isUserExist = await User.findOne({ email });
 
-  if (isUserExist) {
-    throw new AppError(httpStatus.BAD_REQUEST, "User already exist!");
-  }
+  // if (isUserExist) {
+  //   throw new AppError(httpStatus.CONFLICT, "User already exist!");
+  // }
   // Hash the password
   const hashedPassword = await bcryptjs.hash(password as string, 10);
 
@@ -46,9 +47,9 @@ const updateUser = async( userId: string,
 const isUserExist = await User.findById(userId);
 
 
-if(!isUserExist){
-  throw new AppError(httpStatus.BAD_REQUEST, "User does not exist!");
-}
+// if(!isUserExist){
+//   throw new AppError(httpStatus.BAD_REQUEST, "User does not exist!");
+// }
 
 
 
