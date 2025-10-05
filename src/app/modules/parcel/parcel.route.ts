@@ -3,7 +3,10 @@ import { ParcelControllers } from "./parcel.controller";
 import { validateRequest } from "../../middlewares/validateRequest";
 import { checkAuth } from "../../middlewares/checkAuth";
 import { Role } from "../user/user.interface";
-import { createParcelZodSchema } from "./parcel.validation";
+import {
+  createParcelZodSchema,
+  cancelParcelZodSchema,
+} from "./parcel.validation";
 
 const router = Router();
 
@@ -20,6 +23,14 @@ router.get(
   "/my-parcels",
   checkAuth(Role.SENDER, "Only SENDER can view their own parcels"),
   ParcelControllers.getParcelsBySender
+);
+
+// CANCEL PARCEL - Sender only
+router.patch(
+  "/:id/cancel",
+  checkAuth(Role.SENDER, "Only SENDER can cancel their parcel"),
+  validateRequest(cancelParcelZodSchema),
+  ParcelControllers.cancelParcel
 );
 
 // GET SINGLE PARCEL BY ID - Sender only

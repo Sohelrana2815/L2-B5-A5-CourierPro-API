@@ -84,3 +84,13 @@ export const updateParcelZodSchema = z.object({
   expectedDeliveryDate: z.iso.datetime({ error: "Invalid date format" }),
   isBlocked: z.boolean().optional(),
 });
+
+// // Cancel Parcel Schema (for sender)
+
+export const cancelParcelZodSchema = z.object({
+  note: z
+    .string()
+    .max(500, { error: "Note cannot exceed 500 characters" })
+    .trim()
+    .optional(),
+});

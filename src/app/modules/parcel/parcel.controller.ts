@@ -7,8 +7,7 @@ import { ParcelServices } from "./parcel.service";
 import { JwtPayload } from "jsonwebtoken";
 
 // CREATE PARCEL (Sender Role)
-const createParcel = 
-catchAsync(
+const createParcel = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
     const user = req.user as JwtPayload;
     const senderId = user.userId;
@@ -76,9 +75,29 @@ const getParcelByTrackingId = catchAsync(
   }
 );
 
+// CANCEL PARCEL (Sender Role)
+const cancelParcel = catchAsync(
+  async (req: Request, res: Response, next: NextFunction) => {
+    const parcelId = req.params.id;
+    const user = req.user as JwtPayload;
+    const senderId = user.userId;
+    const { note } = req.body;
+
+    const parcel = await ParcelServices.cancelParcel(parcelId, senderId, note);
+
+    sendResponse(res, {
+      success: true,
+      statusCode: httpStatus.OK,
+      message: "Parcel cancelled successfully✅",
+      data: parcel,
+    });
+  }
+);
+
 export const ParcelControllers = {
   createParcel,
   getParcelsBySender,
   getParcelById,
   getParcelByTrackingId,
+  cancelParcel,
 };

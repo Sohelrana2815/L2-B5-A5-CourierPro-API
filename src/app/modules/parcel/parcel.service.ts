@@ -71,6 +71,9 @@ const createParcel = async (
   return newParcel;
 };
 
+
+
+
 // GET ALL PARCELS BY SENDER
 const getParcelsBySender = async (senderId: string) => {
   const parcels = await Parcel.find({ senderId }).sort({ createdAt: -1 });
@@ -112,9 +115,69 @@ const getParcelByTrackingId = async (trackingId: string) => {
   return parcel;
 };
 
+// CANCEL PARCEL (Sender Role)
+const cancelParcel = async (
+  parcelId: string,
+  senderId: string,
+  note?: string
+): Promise<IParcel> => {
+  // Find the parcel
+  const parcel = await Parcel.findById(parcelId);
+
+  if (!parcel) {
+    throw new AppError(httpStatus.NOT_FOUND, "Parcel not found!");
+  }
+
+  // Check if the user is the sender
+  if (parcel.senderId.toString() !== senderId) {
+    throw new AppError(
+      httpStatus.FORBIDDEN,
+      "You are not authorized to cancel this parcel!"
+    );
+  }
+
+  // Check if the parcel is already cancelled
+  if (parcel.currentStatus === ParcelStatus.CANCELLED) {
+    throw new AppError(
+      httpStatus.BAD_REQUEST,
+      "Parcel is already cancelled!"
+    );
+  }
+
+  // Check if the parcel can be cancelled (only REQUESTED or APPROVED status)
+  if (
+    parcel.currentStatus !== ParcelStatus.REQUESTED &&
+    parcel.currentStatus !== ParcelStatus.APPROVED
+  ) {
+    throw new AppError(
+      httpStatus.BAD_REQUEST,
+      `Cannot cancel parcel with status: ${parcel.currentStatus}. Only parcels with REQUESTED or APPROVED status can be cancelled.`
+    );
+  }
+
+  // Update the parcel status to CANCELLED
+  parcel.currentStatus = ParcelStatus.CANCELLED;
+
+  // Add status log entry
+  const cancelStatusLog = {
+    status: ParcelStatus.CANCELLED,
+    timestamp: new Date(),
+    updatedBy: new Types.ObjectId(senderId),
+    note: note || "Parcel cancelled by sender",
+  };
+
+  parcel.statusHistory.push(cancelStatusLog);
+
+  // Save the updated parcel
+  await parcel.save();
+
+  return parcel;
+};
+
 export const ParcelServices = {
   createParcel,
   getParcelsBySender,
   getParcelById,
   getParcelByTrackingId,
+  cancelParcel,
 };
