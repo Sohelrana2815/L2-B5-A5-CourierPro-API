@@ -39,7 +39,7 @@ const userSchema = new Schema<IUser>(
     role: {
       type: String,
       enum: Object.values(Role),
-      default: Role.SENDER,
+      required: true,
       index: true,
     },
     isVerified: { type: Boolean, default: false },

@@ -8,7 +8,7 @@ import expressSession from "express-session";
 import "./app/config/passport";
 const app = express();
 
-app.use(express.json());
+app.use(express.json())
 
 app.use(
   expressSession({

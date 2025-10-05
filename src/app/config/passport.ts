@@ -69,8 +69,10 @@ passport.use(
       clientID: envVars.GOOGLE_CLIENT_ID,
       clientSecret: envVars.GOOGLE_CLIENT_SECRET,
       callbackURL: envVars.GOOGLE_CALLBACK_URL,
+      passReqToCallback: true,
     },
     async (
+      req: any,
       accessToken: string,
       refreshToken: string,
       profile: Profile,
@@ -86,11 +88,24 @@ passport.use(
         let user = await User.findOne({ email });
 
         if (!user) {
+          // Parse state to get role
+          let role = Role.SENDER; // Default fallback
+          try {
+            const state = req.query.state;
+            if (state) {
+              const parsedState = JSON.parse(state);
+              role = parsedState.role || Role.SENDER;
+            }
+          } catch (e) {
+            // If state parsing fails, use default SENDER role
+            console.log("State parsing error, using default SENDER role");
+          }
+
           user = await User.create({
             email,
             name: profile.displayName,
             picture: profile.photos?.[0].value,
-            role: Role.SENDER,
+            role: role,
             isVerified: true,
             auths: [
               {

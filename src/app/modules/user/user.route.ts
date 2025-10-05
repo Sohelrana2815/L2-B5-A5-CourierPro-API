@@ -14,11 +14,15 @@ router.post(
   UserControllers.createUser
 );
 
-router.get("/all-users", checkAuth(Role.ADMIN), UserControllers.getAllUsers);
+router.get(
+  "/all-users", 
+  checkAuth(Role.ADMIN, "Only ADMIN can view all users"), 
+  UserControllers.getAllUsers
+);
 
 router.patch(
   "/:id",
-  checkAuth(...Object.values(Role)),
+  checkAuth(Object.values(Role), "You must be logged in to update your profile"),
   UserControllers.updateUser
 );
 

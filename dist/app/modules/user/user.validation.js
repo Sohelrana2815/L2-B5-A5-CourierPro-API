@@ -9,7 +9,7 @@ const user_interface_1 = require("./user.interface");
 exports.createUserZodSchema = zod_1.default.object({
     // Name
     name: zod_1.default
-        .string({ error: "Name must be string" })
+        .string({ error: "Name must be string and required!" })
         .min(3, { error: "Name is too short. Minimum 3 characters long" })
         .max(50, { error: "Name is too long. Maximum 50 characters" }),
     // Email

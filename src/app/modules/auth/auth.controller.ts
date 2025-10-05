@@ -118,7 +118,19 @@ const resetPassword = catchAsync(
 
 const googleCallbackController = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
-    let redirectTo = req.query.state ? (req.query.state as string) : "";
+    let redirectTo = "/";
+    
+    // Parse state to get redirect path
+    try {
+      const state = req.query.state ? (req.query.state as string) : "";
+      if (state) {
+        const parsedState = JSON.parse(state);
+        redirectTo = parsedState.redirect || "/";
+      }
+    } catch (e) {
+      // If state parsing fails, use default redirect
+      redirectTo = req.query.state ? (req.query.state as string) : "/";
+    }
 
     if (redirectTo.startsWith("/")) {
       redirectTo = redirectTo.slice(1);

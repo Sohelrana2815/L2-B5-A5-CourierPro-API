@@ -24,6 +24,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.UserServices = void 0;
+/* eslint-disable @typescript-eslint/no-unused-vars */
 const AppError_1 = __importDefault(require("../../errorHelpers/AppError"));
 const user_interface_1 = require("./user.interface");
 const user_model_1 = __importDefault(require("./user.model"));
@@ -33,9 +34,9 @@ const env_1 = require("../../config/env");
 const createUser = (payload) => __awaiter(void 0, void 0, void 0, function* () {
     const { email, password } = payload, rest = __rest(payload, ["email", "password"]);
     const isUserExist = yield user_model_1.default.findOne({ email });
-    if (isUserExist) {
-        throw new AppError_1.default(http_status_codes_1.default.BAD_REQUEST, "User already exist!");
-    }
+    // if (isUserExist) {
+    //   throw new AppError(httpStatus.CONFLICT, "User already exist!");
+    // }
     // Hash the password
     const hashedPassword = yield bcryptjs_1.default.hash(password, 10);
     // Password matching
@@ -48,9 +49,9 @@ const createUser = (payload) => __awaiter(void 0, void 0, void 0, function* () {
 });
 const updateUser = (userId, payload, decodedToken) => __awaiter(void 0, void 0, void 0, function* () {
     const isUserExist = yield user_model_1.default.findById(userId);
-    if (!isUserExist) {
-        throw new AppError_1.default(http_status_codes_1.default.BAD_REQUEST, "User does not exist!");
-    }
+    // if(!isUserExist){
+    //   throw new AppError(httpStatus.BAD_REQUEST, "User does not exist!");
+    // }
     if (payload.role) {
         if (decodedToken.role === user_interface_1.Role.SENDER || decodedToken.role === user_interface_1.Role.RECEIVER) {
             throw new AppError_1.default(http_status_codes_1.default.BAD_REQUEST, "You are not allowed to update role!");

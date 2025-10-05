@@ -45,6 +45,10 @@ export const createUserZodSchema = z.object({
       error: "Address cannot exceed 200 characters",
     })
     .optional(),
+  // Role - Required for registration, only SENDER or RECEIVER allowed
+  role: z.enum([Role.SENDER, Role.RECEIVER], {
+    message: "Role must be either SENDER or RECEIVER",
+  }),
 });
 
 export const updateUserZodSchema = z.object({

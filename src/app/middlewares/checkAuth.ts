@@ -7,10 +7,14 @@ import { JwtPayload } from "jsonwebtoken";
 import User from "../modules/user/user.model";
 import { IsActive } from "../modules/user/user.interface";
 export const checkAuth =
-  (...authRoles: string[]) =>
+  (authRoles: string | string[], customErrorMessage?: string) =>
   async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const accessToken = req.headers.authorization;
+      // Normalize authRoles to array
+      const roles = Array.isArray(authRoles) ? authRoles : [authRoles];
+
+      // Check both cookie and Authorization header
+      const accessToken = req.cookies?.accessToken || req.headers.authorization;
 
       if (!accessToken) {
         throw new AppError(httpStatus.BAD_REQUEST, "No Token received.");
@@ -48,11 +52,15 @@ export const checkAuth =
         throw new AppError(httpStatus.BAD_REQUEST, "User is deleted!");
       }
 
-      if (!authRoles.includes(verifiedToken.role)) {
-        throw new AppError(
-          httpStatus.FORBIDDEN,
-          "Only Admin can view this route!"
-        );
+      if (!roles.includes(verifiedToken.role)) {
+        // Use custom message if provided, otherwise use generic message
+        const errorMessage =
+          customErrorMessage ||
+          `Access denied! This route is only accessible to: ${
+            roles.length === 1 ? roles[0] : roles.join(", ")
+          }`;
+
+        throw new AppError(httpStatus.FORBIDDEN, errorMessage);
       }
 
       req.user = verifiedToken;

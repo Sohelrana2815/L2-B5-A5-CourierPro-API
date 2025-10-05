@@ -41,11 +41,6 @@ const getAllUsers = (0, catchAsync_1.catchAsync)((req, res, next) => __awaiter(v
 // UPDATE USER
 const updateUser = (0, catchAsync_1.catchAsync)((req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
     const userId = req.params.id;
-    // const token = req.headers.authorization;
-    // const verifiedToken = verifyToken(
-    //   token as string,
-    //   envVars.JWT_ACCESS_SECRET
-    // ) as JwtPayload;
     const verifiedToken = req.user;
     const payload = req.body;
     const user = yield user_service_1.UserServices.updateUser(userId, payload, verifiedToken);

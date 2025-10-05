@@ -11,7 +11,7 @@ router.post("/refresh-token", AuthControllers.getNewAccessToken);
 router.post("/logout", AuthControllers.logout);
 router.post(
   "/reset-password",
-  checkAuth(...Object.values(Role)),
+  checkAuth(Object.values(Role), "You must be logged in to reset your password"),
   AuthControllers.resetPassword
 );
 
@@ -21,9 +21,22 @@ router.get(
   "/google",
   async (req: Request, res: Response, next: NextFunction) => {
     const redirect = req.query.redirect || "/";
+    const role = req.query.role || Role.SENDER;
+    
+    // Validate role
+    if (role !== Role.SENDER && role !== Role.RECEIVER) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid role. Must be SENDER or RECEIVER"
+      });
+    }
+    
+    // Pass both redirect and role in state as JSON
+    const state = JSON.stringify({ redirect, role });
+    
     passport.authenticate("google", {
       scope: ["profile", "email"],
-      state: redirect as string,
+      state: state,
     })(req, res, next);
   }
 );

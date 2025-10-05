@@ -17,28 +17,24 @@ const AppError_1 = __importDefault(require("../../errorHelpers/AppError"));
 const user_model_1 = __importDefault(require("../user/user.model"));
 const http_status_codes_1 = __importDefault(require("http-status-codes"));
 const bcryptjs_1 = __importDefault(require("bcryptjs"));
+const userTokens_1 = require("../../utils/userTokens");
 const env_1 = require("../../config/env");
-const jwt_1 = require("../../utils/jwt");
-const credentialsLogin = (payload) => __awaiter(void 0, void 0, void 0, function* () {
-    const { email, password } = payload;
-    const isUserExist = yield user_model_1.default.findOne({ email });
-    if (!isUserExist) {
-        throw new AppError_1.default(http_status_codes_1.default.BAD_REQUEST, "User does not exist!");
-    }
-    const isPasswordMatched = yield bcryptjs_1.default.compare(password, isUserExist.password);
-    if (!isPasswordMatched) {
-        throw new AppError_1.default(http_status_codes_1.default.BAD_REQUEST, "Incorrect password!");
-    }
-    const jwtPayload = {
-        id: isUserExist._id,
-        email: isUserExist.email,
-        role: isUserExist.role,
-    };
-    const accessToken = (0, jwt_1.generateToken)(jwtPayload, env_1.envVars.JWT_ACCESS_SECRET, env_1.envVars.JWT_ACCESS_EXPIRES);
+const getNewAccessToken = (refreshToken) => __awaiter(void 0, void 0, void 0, function* () {
+    const newAccessToken = yield (0, userTokens_1.createNewAccessTokenWithRefreshToken)(refreshToken);
     return {
-        accessToken,
+        accessToken: newAccessToken,
     };
 });
+const resetPassword = (decodedToken, oldPassword, newPassword) => __awaiter(void 0, void 0, void 0, function* () {
+    const user = (yield user_model_1.default.findById(decodedToken.userId));
+    const isOldPasswordMatched = yield bcryptjs_1.default.compare(oldPassword, user.password);
+    if (!isOldPasswordMatched) {
+        throw new AppError_1.default(http_status_codes_1.default.BAD_REQUEST, "Incorrect old password!");
+    }
+    user.password = yield bcryptjs_1.default.hash(newPassword, Number(env_1.envVars.BCRYPT_SALT_ROUND));
+    user.save();
+});
 exports.AuthServices = {
-    credentialsLogin,
+    getNewAccessToken,
+    resetPassword,
 };
