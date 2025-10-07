@@ -18,17 +18,8 @@ const AppError_1 = __importDefault(require("../../errorHelpers/AppError"));
 const parcel_interface_1 = require("./parcel.interface");
 const parcel_model_1 = __importDefault(require("./parcel.model"));
 const mongoose_1 = require("mongoose");
-// Calculate fee based on weight (simple pricing logic)
-const calculateFee = (weightKg) => {
-    const basePrice = 50; // Base price in BDT
-    const pricePerKg = 20; // Price per kg in BDT
-    if (weightKg <= 1) {
-        return basePrice;
-    }
-    else {
-        return basePrice + Math.ceil(weightKg - 1) * pricePerKg;
-    }
-};
+const fee_calculator_1 = require("../../utils/fee-calculator");
+const handleValidateReceiverInfo_1 = require("../../helpers/handleValidateReceiverInfo");
 // CREATE PARCEL (Sender Role)
 const createParcel = (senderId, payload) => __awaiter(void 0, void 0, void 0, function* () {
     const { receiverInfo, parcelDetails, expectedDeliveryDate } = payload;
@@ -36,8 +27,10 @@ const createParcel = (senderId, payload) => __awaiter(void 0, void 0, void 0, fu
     if (!receiverInfo || !parcelDetails) {
         throw new AppError_1.default(http_status_codes_1.default.BAD_REQUEST, "Receiver info and parcel details are required!");
     }
+    // Validate receiver information against registered users
+    const receiverValidation = yield (0, handleValidateReceiverInfo_1.handleValidateReceiverInfo)(receiverInfo);
     // Calculate delivery fee based on weight
-    const fee = calculateFee(parcelDetails.weightKg);
+    const fee = (0, fee_calculator_1.calculateFee)(parcelDetails.weightKg);
     // Create initial status log
     const initialStatusLog = {
         status: parcel_interface_1.ParcelStatus.REQUESTED,
@@ -48,7 +41,8 @@ const createParcel = (senderId, payload) => __awaiter(void 0, void 0, void 0, fu
     // Create the parcel
     const newParcel = yield parcel_model_1.default.create({
         senderId: new mongoose_1.Types.ObjectId(senderId),
-        receiverInfo,
+        receiverId: receiverValidation.receiverId,
+        receiverInfo: receiverValidation.validatedReceiverInfo,
         parcelDetails,
         fee,
         currentStatus: parcel_interface_1.ParcelStatus.REQUESTED,
@@ -86,6 +80,213 @@ const getParcelByTrackingId = (trackingId) => __awaiter(void 0, void 0, void 0, 
     if (!parcel) {
         throw new AppError_1.default(http_status_codes_1.default.NOT_FOUND, "Parcel not found!");
     }
+    return {
+        parcel,
+    };
+});
+// GET PARCEL BY TRACKING ID AND RECEIVER PHONE (for guest receivers)
+const getParcelByTrackingIdAndPhone = (trackingId, receiverPhone) => __awaiter(void 0, void 0, void 0, function* () {
+    const parcel = yield parcel_model_1.default.findOne({
+        trackingId,
+        "receiverInfo.phone": receiverPhone,
+    });
+    if (!parcel) {
+        throw new AppError_1.default(http_status_codes_1.default.NOT_FOUND, "Parcel not found or phone number doesn't match!");
+    }
+    return parcel;
+});
+// GET INCOMING PARCELS BY RECEIVER PHONE (for guest receivers)
+const getIncomingParcelsByPhone = (receiverPhone) => __awaiter(void 0, void 0, void 0, function* () {
+    const parcels = yield parcel_model_1.default.find({
+        "receiverInfo.phone": receiverPhone,
+        currentStatus: {
+            $in: [
+                parcel_interface_1.ParcelStatus.REQUESTED,
+                parcel_interface_1.ParcelStatus.APPROVED,
+                parcel_interface_1.ParcelStatus.PICKED_UP,
+                parcel_interface_1.ParcelStatus.IN_TRANSIT,
+            ],
+        },
+    }).sort({ createdAt: -1 });
+    const total = yield parcel_model_1.default.countDocuments({
+        "receiverInfo.phone": receiverPhone,
+        currentStatus: {
+            $in: [
+                parcel_interface_1.ParcelStatus.REQUESTED,
+                parcel_interface_1.ParcelStatus.APPROVED,
+                parcel_interface_1.ParcelStatus.PICKED_UP,
+                parcel_interface_1.ParcelStatus.IN_TRANSIT,
+            ],
+        },
+    });
+    return {
+        data: parcels,
+        meta: { total },
+    };
+});
+// GET INCOMING PARCELS BY RECEIVER ID (for registered receivers)
+const getIncomingParcelsByReceiverId = (receiverId) => __awaiter(void 0, void 0, void 0, function* () {
+    const parcels = yield parcel_model_1.default.find({
+        receiverId: new mongoose_1.Types.ObjectId(receiverId),
+        currentStatus: {
+            $in: [
+                parcel_interface_1.ParcelStatus.REQUESTED,
+                parcel_interface_1.ParcelStatus.APPROVED,
+                parcel_interface_1.ParcelStatus.PICKED_UP,
+                parcel_interface_1.ParcelStatus.IN_TRANSIT,
+            ],
+        },
+    }).sort({ createdAt: -1 });
+    const total = yield parcel_model_1.default.countDocuments({
+        receiverId: new mongoose_1.Types.ObjectId(receiverId),
+        currentStatus: {
+            $in: [
+                parcel_interface_1.ParcelStatus.REQUESTED,
+                parcel_interface_1.ParcelStatus.APPROVED,
+                parcel_interface_1.ParcelStatus.PICKED_UP,
+                parcel_interface_1.ParcelStatus.IN_TRANSIT,
+            ],
+        },
+    });
+    return {
+        data: parcels,
+        meta: { total },
+    };
+});
+// CANCEL PARCEL (Sender Role)
+const cancelParcel = (parcelId, senderId, note) => __awaiter(void 0, void 0, void 0, function* () {
+    // Find the parcel
+    const parcel = yield parcel_model_1.default.findById(parcelId);
+    if (!parcel) {
+        throw new AppError_1.default(http_status_codes_1.default.NOT_FOUND, "Parcel not found!");
+    }
+    if (parcel.senderId.toString() !== senderId) {
+        throw new AppError_1.default(http_status_codes_1.default.FORBIDDEN, "You are not authorized to cancel this parcel!");
+    }
+    // Check if the parcel is already cancelled
+    if (parcel.currentStatus === parcel_interface_1.ParcelStatus.CANCELLED) {
+        throw new AppError_1.default(http_status_codes_1.default.BAD_REQUEST, "Parcel is already cancelled!");
+    }
+    // Check if the parcel can be cancelled (only REQUESTED or APPROVED status)
+    if (parcel.currentStatus !== parcel_interface_1.ParcelStatus.REQUESTED &&
+        parcel.currentStatus !== parcel_interface_1.ParcelStatus.APPROVED) {
+        throw new AppError_1.default(http_status_codes_1.default.BAD_REQUEST, `Cannot cancel parcel with status: ${parcel.currentStatus}. Only parcels with REQUESTED or APPROVED status can be cancelled.`);
+    }
+    // Update the parcel status to CANCELLED
+    parcel.currentStatus = parcel_interface_1.ParcelStatus.CANCELLED;
+    // Add status log entry
+    const cancelStatusLog = {
+        status: parcel_interface_1.ParcelStatus.CANCELLED,
+        timestamp: new Date(),
+        updatedBy: new mongoose_1.Types.ObjectId(senderId),
+        note: note || "Parcel cancelled by sender",
+    };
+    parcel.statusHistory.push(cancelStatusLog);
+    // Save the updated parcel
+    yield parcel.save();
+    return parcel;
+});
+// GET ALL PARCELS (Admin Role)
+const getAllParcels = () => __awaiter(void 0, void 0, void 0, function* () {
+    const parcels = yield parcel_model_1.default.find({})
+        .populate("senderId", "name email phone")
+        .populate("receiverId", "name email phone")
+        .sort({ createdAt: -1 });
+    const total = yield parcel_model_1.default.countDocuments();
+    return {
+        data: parcels,
+        meta: { total },
+    };
+});
+// RECEIVER APPROVE PARCEL (For both registered and guest receivers)
+const approveParcelByReceiver = (parcelId, receiverIdentifier) => __awaiter(void 0, void 0, void 0, function* () {
+    // Find the parcel
+    const parcel = yield parcel_model_1.default.findById(parcelId);
+    if (!parcel) {
+        throw new AppError_1.default(http_status_codes_1.default.NOT_FOUND, "Parcel not found!");
+    }
+    // Check if parcel can be approved (only REQUESTED status)
+    if (parcel.currentStatus !== parcel_interface_1.ParcelStatus.REQUESTED) {
+        throw new AppError_1.default(http_status_codes_1.default.BAD_REQUEST, `Cannot approve parcel with status: ${parcel.currentStatus}. Only parcels with REQUESTED status can be approved.`);
+    }
+    // Validate receiver authorization
+    let isAuthorizedReceiver = false;
+    if (receiverIdentifier.userId) {
+        // For registered receivers - check receiverId matches
+        if (parcel.receiverId &&
+            parcel.receiverId.toString() === receiverIdentifier.userId) {
+            isAuthorizedReceiver = true;
+        }
+    }
+    else if (receiverIdentifier.phone) {
+        // For guest receivers - check phone matches
+        if (parcel.receiverInfo.phone === receiverIdentifier.phone) {
+            isAuthorizedReceiver = true;
+        }
+    }
+    if (!isAuthorizedReceiver) {
+        throw new AppError_1.default(http_status_codes_1.default.FORBIDDEN, "You are not authorized to approve this parcel!");
+    }
+    // Update the parcel status to APPROVED
+    parcel.currentStatus = parcel_interface_1.ParcelStatus.APPROVED;
+    // Add status log entry
+    const approveStatusLog = {
+        status: parcel_interface_1.ParcelStatus.APPROVED,
+        timestamp: new Date(),
+        updatedBy: receiverIdentifier.userId
+            ? new mongoose_1.Types.ObjectId(receiverIdentifier.userId)
+            : new mongoose_1.Types.ObjectId(), // For guest users, we'll use a default ObjectId
+        note: "Parcel approved by receiver",
+    };
+    parcel.statusHistory.push(approveStatusLog);
+    // Save the updated parcel
+    yield parcel.save();
+    return parcel;
+});
+// RECEIVER CANCEL PARCEL (For both registered and guest receivers)
+const cancelParcelByReceiver = (parcelId, receiverIdentifier, note) => __awaiter(void 0, void 0, void 0, function* () {
+    // Find the parcel
+    const parcel = yield parcel_model_1.default.findById(parcelId);
+    if (!parcel) {
+        throw new AppError_1.default(http_status_codes_1.default.NOT_FOUND, "Parcel not found!");
+    }
+    // Check if parcel can be cancelled (only REQUESTED or APPROVED status)
+    if (parcel.currentStatus !== parcel_interface_1.ParcelStatus.REQUESTED &&
+        parcel.currentStatus !== parcel_interface_1.ParcelStatus.APPROVED) {
+        throw new AppError_1.default(http_status_codes_1.default.BAD_REQUEST, `Cannot cancel parcel with status: ${parcel.currentStatus}. Only parcels with REQUESTED or APPROVED status can be cancelled.`);
+    }
+    // Validate receiver authorization
+    let isAuthorizedReceiver = false;
+    if (receiverIdentifier.userId) {
+        // For registered receivers - check receiverId matches
+        if (parcel.receiverId &&
+            parcel.receiverId.toString() === receiverIdentifier.userId) {
+            isAuthorizedReceiver = true;
+        }
+    }
+    else if (receiverIdentifier.phone) {
+        // For guest receivers - check phone matches
+        if (parcel.receiverInfo.phone === receiverIdentifier.phone) {
+            isAuthorizedReceiver = true;
+        }
+    }
+    if (!isAuthorizedReceiver) {
+        throw new AppError_1.default(http_status_codes_1.default.FORBIDDEN, "You are not authorized to cancel this parcel!");
+    }
+    // Update the parcel status to CANCELLED
+    parcel.currentStatus = parcel_interface_1.ParcelStatus.CANCELLED;
+    // Add status log entry
+    const cancelStatusLog = {
+        status: parcel_interface_1.ParcelStatus.CANCELLED,
+        timestamp: new Date(),
+        updatedBy: receiverIdentifier.userId
+            ? new mongoose_1.Types.ObjectId(receiverIdentifier.userId)
+            : new mongoose_1.Types.ObjectId(), // For guest users, we'll use a default ObjectId
+        note: note || "Parcel cancelled by receiver",
+    };
+    parcel.statusHistory.push(cancelStatusLog);
+    // Save the updated parcel
+    yield parcel.save();
     return parcel;
 });
 exports.ParcelServices = {
@@ -93,4 +294,11 @@ exports.ParcelServices = {
     getParcelsBySender,
     getParcelById,
     getParcelByTrackingId,
+    getParcelByTrackingIdAndPhone,
+    getIncomingParcelsByPhone,
+    getIncomingParcelsByReceiverId,
+    getAllParcels,
+    cancelParcel,
+    approveParcelByReceiver,
+    cancelParcelByReceiver,
 };

@@ -94,3 +94,49 @@ export const cancelParcelZodSchema = z.object({
     .trim()
     .optional(),
 });
+
+// // Get Parcel by Tracking ID and Phone Schema (for guest receivers)
+
+export const getParcelByTrackingIdAndPhoneZodSchema = z.object({
+  phone: z
+    .string({ error: "Receiver phone is required" })
+    .regex(/^(?:\+?88)?01[3-9]\d{8}$/, {
+      error: "Invalid Bangladeshi mobile number",
+    })
+    .trim(),
+});
+
+// // Receiver Approve Parcel Schema
+export const approveParcelByReceiverZodSchema = z.object({
+  // For guest receivers - phone is required if not authenticated
+  phone: z
+    .string()
+    .regex(/^(?:\+?88)?01[3-9]\d{8}$/, {
+      error: "Invalid Bangladeshi mobile number",
+    })
+    .optional(), // Optional for registered receivers
+});
+
+// // Receiver Cancel Parcel Schema
+export const cancelParcelByReceiverZodSchema = z.object({
+  // For guest receivers - phone is required if not authenticated
+  phone: z
+    .string()
+    .regex(/^(?:\+?88)?01[3-9]\d{8}$/, {
+      error: "Invalid Bangladeshi mobile number",
+    })
+    .optional(), // Optional for registered receivers
+  note: z
+    .string()
+    .max(500, { error: "Note cannot exceed 500 characters" })
+    .trim()
+    .optional(),
+});
+export const getIncomingParcelsByPhoneZodSchema = z.object({
+  phone: z
+    .string({ error: "Receiver phone is required" })
+    .regex(/^(?:\+?88)?01[3-9]\d{8}$/, {
+      error: "Invalid Bangladeshi mobile number",
+    })
+    .trim(),
+});

@@ -38,9 +38,9 @@ const seedAdmin = () => __awaiter(void 0, void 0, void 0, function* () {
             isVerified: true,
             auths: [authProvider],
         };
-        const admin = yield user_model_1.default.create(payload);
+        yield user_model_1.default.create(payload);
         console.log("Super admin created successfully!✅ \n");
-        console.log(admin);
+        // console.log(admin);
     }
     catch (err) {
         console.log(err);

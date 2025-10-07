@@ -6,9 +6,20 @@ import { Role } from "../user/user.interface";
 import {
   createParcelZodSchema,
   cancelParcelZodSchema,
+  getParcelByTrackingIdAndPhoneZodSchema,
+  getIncomingParcelsByPhoneZodSchema,
+  approveParcelByReceiverZodSchema,
+  cancelParcelByReceiverZodSchema,
 } from "./parcel.validation";
 
 const router = Router();
+
+// GET ALL PARCELS - Admin only
+router.get(
+  "/admin/all",
+  checkAuth(Role.ADMIN, "Only ADMIN can view all parcels"),
+  ParcelControllers.getAllParcels
+);
 
 // CREATE PARCEL - Sender only
 router.post(
@@ -35,12 +46,58 @@ router.patch(
 
 // GET SINGLE PARCEL BY ID - Sender only
 router.get(
-  "/:id", 
-  checkAuth(Role.SENDER, "Only SENDER can view parcel details"), 
+  "/:id",
+  checkAuth(Role.SENDER, "Only SENDER can view parcel details"),
   ParcelControllers.getParcelById
 );
 
 // GET PARCEL BY TRACKING ID - Public route (anyone can track)
 router.get("/track/:trackingId", ParcelControllers.getParcelByTrackingId);
+
+// GET PARCEL BY TRACKING ID AND PHONE - For guest receivers (no auth required)
+router.post(
+  "/track/:trackingId/verify",
+  validateRequest(getParcelByTrackingIdAndPhoneZodSchema),
+  ParcelControllers.getParcelByTrackingIdAndPhone
+);
+
+// GET INCOMING PARCELS BY PHONE - For guest receivers (no auth required)
+router.post(
+  "/incoming",
+  validateRequest(getIncomingParcelsByPhoneZodSchema),
+  ParcelControllers.getIncomingParcelsByPhone
+);
+
+// RECEIVER APPROVE PARCEL - For registered receivers (requires RECEIVER role auth)
+
+// RECEIVER APPROVE PARCEL - Registered receiver (auth required)
+router.patch(
+  "/receiver/:id/approve",
+  checkAuth(Role.RECEIVER, "Only RECEIVER can approve parcels"),
+  validateRequest(approveParcelByReceiverZodSchema),
+  ParcelControllers.approveParcelByReceiver
+);
+
+// RECEIVER CANCEL PARCEL - Registered receiver (auth required)
+router.patch(
+  "/receiver/:id/cancel",
+  checkAuth(Role.RECEIVER, "Only RECEIVER can cancel parcels"),
+  validateRequest(cancelParcelByReceiverZodSchema),
+  ParcelControllers.cancelParcelByReceiver
+);
+
+// GUEST APPROVE PARCEL - No auth required
+router.patch(
+  "/guest/:id/approve",
+  validateRequest(approveParcelByReceiverZodSchema),
+  ParcelControllers.guestApproveParcel
+);
+
+// GUEST CANCEL PARCEL - No auth required
+router.patch(
+  "/guest/:id/cancel",
+  validateRequest(cancelParcelByReceiverZodSchema),
+  ParcelControllers.guestCancelParcel
+);
 
 export const ParcelRoutes = router;

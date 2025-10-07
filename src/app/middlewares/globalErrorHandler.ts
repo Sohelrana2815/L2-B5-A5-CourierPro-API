@@ -3,10 +3,10 @@ import { NextFunction, Request, Response } from "express";
 import { envVars } from "../config/env";
 import AppError from "../errorHelpers/AppError";
 import { TErrorSource } from "../interfaces/error.types";
-import { handleDuplicateError } from "../helpers/handleDuplicateError";
 import { handleZodError } from "../helpers/handleZodError";
 import { handleCastError } from "../helpers/handleCastError";
 import { handleValidationError } from "../helpers/handleValidationError";
+import { handleDuplicateError } from "../helpers/handleDuplicateError";
 
 // Global Express Error Handler Middleware.
 export const globalErrorHandler = (

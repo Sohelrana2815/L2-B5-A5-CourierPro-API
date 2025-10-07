@@ -32,9 +32,9 @@ export const seedAdmin = async () => {
       auths: [authProvider],
     };
 
-    const admin = await User.create(payload);
+    await User.create(payload);
     console.log("Super admin created successfully!✅ \n");
-    console.log(admin);
+    // console.log(admin);
   } catch (err) {
     console.log(err);
   }

@@ -32,7 +32,7 @@ passport_1.default.use(new passport_local_1.Strategy({
         if (!isUserExist) {
             return done("User does not exist");
         }
-        const isGoogleAuthenticated = isUserExist.auths.some((providerObjects) => (providerObjects.provider === "google"));
+        const isGoogleAuthenticated = isUserExist.auths.some((providerObjects) => providerObjects.provider === "google");
         if (isGoogleAuthenticated) {
             return done(null, false, {
                 message: "You have already logged in with Google. So if you want to login with credentials, then first login with Google and set a password for your gmail account and then you can login with email and password.",
@@ -58,7 +58,8 @@ passport_1.default.use(new passport_google_oauth20_1.Strategy({
     clientID: env_1.envVars.GOOGLE_CLIENT_ID,
     clientSecret: env_1.envVars.GOOGLE_CLIENT_SECRET,
     callbackURL: env_1.envVars.GOOGLE_CALLBACK_URL,
-}, (accessToken, refreshToken, profile, done) => __awaiter(void 0, void 0, void 0, function* () {
+    passReqToCallback: true,
+}, (req, accessToken, refreshToken, profile, done) => __awaiter(void 0, void 0, void 0, function* () {
     var _a, _b;
     try {
         const email = (_a = profile.emails) === null || _a === void 0 ? void 0 : _a[0].value;
@@ -67,11 +68,24 @@ passport_1.default.use(new passport_google_oauth20_1.Strategy({
         }
         let user = yield user_model_1.default.findOne({ email });
         if (!user) {
+            // Parse state to get role
+            let role = user_interface_1.Role.SENDER; // Default fallback
+            try {
+                const state = req.query.state;
+                if (state) {
+                    const parsedState = JSON.parse(state);
+                    role = parsedState.role || user_interface_1.Role.SENDER;
+                }
+            }
+            catch (e) {
+                // If state parsing fails, use default SENDER role
+                console.log("State parsing error, using default SENDER role", e);
+            }
             user = yield user_model_1.default.create({
                 email,
                 name: profile.displayName,
                 picture: (_b = profile.photos) === null || _b === void 0 ? void 0 : _b[0].value,
-                role: user_interface_1.Role.SENDER,
+                role: role,
                 isVerified: true,
                 auths: [
                     {

@@ -30,7 +30,7 @@ passport.use(
         }
 
         const isGoogleAuthenticated = isUserExist.auths.some(
-          (providerObjects) => (providerObjects.provider === "google")
+          (providerObjects) => providerObjects.provider === "google"
         );
 
         if (isGoogleAuthenticated) {
@@ -98,7 +98,7 @@ passport.use(
             }
           } catch (e) {
             // If state parsing fails, use default SENDER role
-            console.log("State parsing error, using default SENDER role");
+            console.log("State parsing error, using default SENDER role", e);
           }
 
           user = await User.create({

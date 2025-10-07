@@ -22,14 +22,24 @@ const router = (0, express_1.Router)();
 router.post("/login", auth_controller_1.AuthControllers.credentialsLogin);
 router.post("/refresh-token", auth_controller_1.AuthControllers.getNewAccessToken);
 router.post("/logout", auth_controller_1.AuthControllers.logout);
-router.post("/reset-password", (0, checkAuth_1.checkAuth)(...Object.values(user_interface_1.Role)), auth_controller_1.AuthControllers.resetPassword);
+router.post("/reset-password", (0, checkAuth_1.checkAuth)(Object.values(user_interface_1.Role), "You must be logged in to reset your password"), auth_controller_1.AuthControllers.resetPassword);
 //  /booking -> /login -> succesful google login -> /booking frontend
 // /login -> succesful google login -> / frontend
 router.get("/google", (req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
     const redirect = req.query.redirect || "/";
+    const role = req.query.role || user_interface_1.Role.SENDER;
+    // Validate role
+    if (role !== user_interface_1.Role.SENDER && role !== user_interface_1.Role.RECEIVER) {
+        return res.status(400).json({
+            success: false,
+            message: "Invalid role. Must be SENDER or RECEIVER"
+        });
+    }
+    // Pass both redirect and role in state as JSON
+    const state = JSON.stringify({ redirect, role });
     passport_1.default.authenticate("google", {
         scope: ["profile", "email"],
-        state: redirect,
+        state: state,
     })(req, res, next);
 }));
 // api/v1/auth/google/callback?state=/booking

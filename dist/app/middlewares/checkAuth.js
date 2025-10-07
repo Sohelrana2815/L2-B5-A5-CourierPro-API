@@ -19,12 +19,13 @@ const jwt_1 = require("../utils/jwt");
 const env_1 = require("../config/env");
 const user_model_1 = __importDefault(require("../modules/user/user.model"));
 const user_interface_1 = require("../modules/user/user.interface");
-const checkAuth = (...authRoles) => (req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
+const checkAuth = (authRoles, customErrorMessage) => (req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
     var _a;
     try {
+        // Normalize authRoles to array
+        const roles = Array.isArray(authRoles) ? authRoles : [authRoles];
         // Check both cookie and Authorization header
-        const accessToken = ((_a = req.cookies) === null || _a === void 0 ? void 0 : _a.accessToken) ||
-            req.headers.authorization;
+        const accessToken = ((_a = req.cookies) === null || _a === void 0 ? void 0 : _a.accessToken) || req.headers.authorization;
         if (!accessToken) {
             throw new AppError_1.default(http_status_codes_1.default.BAD_REQUEST, "No Token received.");
         }
@@ -43,8 +44,11 @@ const checkAuth = (...authRoles) => (req, res, next) => __awaiter(void 0, void 0
         if (isUserExist.isDeleted) {
             throw new AppError_1.default(http_status_codes_1.default.BAD_REQUEST, "User is deleted!");
         }
-        if (!authRoles.includes(verifiedToken.role)) {
-            throw new AppError_1.default(http_status_codes_1.default.FORBIDDEN, "Only Admin can view this route!");
+        if (!roles.includes(verifiedToken.role)) {
+            // Use custom message if provided, otherwise use generic message
+            const errorMessage = customErrorMessage ||
+                `Access denied! This route is only accessible to: ${roles.length === 1 ? roles[0] : roles.join(", ")}`;
+            throw new AppError_1.default(http_status_codes_1.default.FORBIDDEN, errorMessage);
         }
         req.user = verifiedToken;
         next();

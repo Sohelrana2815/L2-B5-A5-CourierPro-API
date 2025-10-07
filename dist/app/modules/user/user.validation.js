@@ -47,6 +47,26 @@ exports.createUserZodSchema = zod_1.default.object({
         error: "Address cannot exceed 200 characters",
     })
         .optional(),
+    // City
+    city: zod_1.default
+        .string({ error: "City must be string" })
+        .min(2, { error: "City name must be at least 2 characters" })
+        .max(50, { error: "City name cannot exceed 50 characters" })
+        .optional(),
+    // Role - Required for registration, only SENDER or RECEIVER allowed
+    role: zod_1.default.enum([user_interface_1.Role.SENDER, user_interface_1.Role.RECEIVER], {
+        message: "Role must be either SENDER or RECEIVER",
+    }),
+}).refine((data) => {
+    // If role is RECEIVER, phone, address, and city are required
+    if (data.role === user_interface_1.Role.RECEIVER) {
+        return data.phone && data.address && data.city;
+    }
+    // For SENDER role, these fields are optional
+    return true;
+}, {
+    message: "Phone, address, and city are required for RECEIVER role",
+    path: ["phone"], // This will show the error on the phone field
 });
 exports.updateUserZodSchema = zod_1.default.object({
     // Name

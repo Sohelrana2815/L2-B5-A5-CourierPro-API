@@ -17,6 +17,7 @@ const http_status_codes_1 = __importDefault(require("http-status-codes"));
 const catchAsync_1 = require("../../utils/catchAsync");
 const sendResponse_1 = require("../../utils/sendResponse");
 const parcel_service_1 = require("./parcel.service");
+const AppError_1 = __importDefault(require("../../errorHelpers/AppError"));
 // CREATE PARCEL (Sender Role)
 const createParcel = (0, catchAsync_1.catchAsync)((req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
     const user = req.user;
@@ -66,9 +67,138 @@ const getParcelByTrackingId = (0, catchAsync_1.catchAsync)((req, res, next) => _
         data: parcel,
     });
 }));
+// GET PARCEL BY TRACKING ID AND RECEIVER PHONE (for guest receivers)
+const getParcelByTrackingIdAndPhone = (0, catchAsync_1.catchAsync)((req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
+    const { trackingId } = req.params;
+    const { phone } = req.body;
+    if (!phone) {
+        throw new AppError_1.default(http_status_codes_1.default.BAD_REQUEST, "Receiver phone number is required!");
+    }
+}));
+// GET INCOMING PARCELS BY RECEIVER PHONE (for guest receivers)
+const getIncomingParcelsByPhone = (0, catchAsync_1.catchAsync)((req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
+    const { phone } = req.body;
+    if (!phone) {
+        throw new AppError_1.default(http_status_codes_1.default.BAD_REQUEST, "Receiver phone number is required!");
+    }
+    const result = yield parcel_service_1.ParcelServices.getIncomingParcelsByPhone(phone);
+    (0, sendResponse_1.sendResponse)(res, {
+        success: true,
+        statusCode: http_status_codes_1.default.OK,
+        message: "Incoming parcels retrieved successfully✅",
+        data: result.data,
+        meta: result.meta,
+    });
+}));
+// GET INCOMING PARCELS BY RECEIVER ID (for registered receivers)
+const getIncomingParcelsByReceiverId = (0, catchAsync_1.catchAsync)((req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
+    const user = req.user;
+    const receiverId = user.userId;
+    const result = yield parcel_service_1.ParcelServices.getIncomingParcelsByReceiverId(receiverId);
+    (0, sendResponse_1.sendResponse)(res, {
+        success: true,
+        statusCode: http_status_codes_1.default.OK,
+        message: "Incoming parcels retrieved successfully✅",
+        data: result.data,
+        meta: result.meta,
+    });
+}));
+// GET ALL PARCELS (Admin Role)
+const getAllParcels = (0, catchAsync_1.catchAsync)((req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
+    const result = yield parcel_service_1.ParcelServices.getAllParcels();
+    (0, sendResponse_1.sendResponse)(res, {
+        success: true,
+        statusCode: http_status_codes_1.default.OK,
+        message: "All parcels retrieved successfully✅",
+        data: result.data,
+        meta: result.meta,
+    });
+}));
+// CANCEL PARCEL (Sender Role)
+const cancelParcel = (0, catchAsync_1.catchAsync)((req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
+    const parcelId = req.params.id;
+    const user = req.user;
+    const senderId = user.userId;
+    const { note } = req.body;
+    const parcel = yield parcel_service_1.ParcelServices.cancelParcel(parcelId, senderId, note);
+    (0, sendResponse_1.sendResponse)(res, {
+        success: true,
+        statusCode: http_status_codes_1.default.OK,
+        message: "Parcel cancelled successfully✅",
+        data: parcel,
+    });
+}));
+// RECEIVER APPROVE PARCEL (Registered receiver, auth required)
+const approveParcelByReceiver = (0, catchAsync_1.catchAsync)((req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
+    const parcelId = req.params.id;
+    const user = req.user;
+    const receiverIdentifier = { userId: user.userId };
+    const parcel = yield parcel_service_1.ParcelServices.approveParcelByReceiver(parcelId, receiverIdentifier);
+    (0, sendResponse_1.sendResponse)(res, {
+        success: true,
+        statusCode: http_status_codes_1.default.OK,
+        message: "Parcel approved successfully by receiver✅",
+        data: parcel,
+    });
+}));
+// RECEIVER CANCEL PARCEL (Registered receiver, auth required)
+const cancelParcelByReceiver = (0, catchAsync_1.catchAsync)((req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
+    const parcelId = req.params.id;
+    const user = req.user;
+    const { note } = req.body;
+    const receiverIdentifier = { userId: user.userId };
+    const parcel = yield parcel_service_1.ParcelServices.cancelParcelByReceiver(parcelId, receiverIdentifier, note);
+    (0, sendResponse_1.sendResponse)(res, {
+        success: true,
+        statusCode: http_status_codes_1.default.OK,
+        message: "Parcel cancelled successfully by receiver✅",
+        data: parcel,
+    });
+}));
+// GUEST APPROVE PARCEL (No auth required)
+const guestApproveParcel = (0, catchAsync_1.catchAsync)((req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
+    const parcelId = req.params.id;
+    const { phone } = req.body;
+    if (!phone) {
+        throw new AppError_1.default(http_status_codes_1.default.BAD_REQUEST, "Receiver phone number is required!");
+    }
+    const receiverIdentifier = { phone };
+    const parcel = yield parcel_service_1.ParcelServices.approveParcelByReceiver(parcelId, receiverIdentifier);
+    (0, sendResponse_1.sendResponse)(res, {
+        success: true,
+        statusCode: http_status_codes_1.default.OK,
+        message: "Parcel approved successfully by guest receiver✅",
+        data: parcel,
+    });
+}));
+// GUEST CANCEL PARCEL (No auth required)
+const guestCancelParcel = (0, catchAsync_1.catchAsync)((req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
+    const parcelId = req.params.id;
+    const { phone, note } = req.body;
+    if (!phone) {
+        throw new AppError_1.default(http_status_codes_1.default.BAD_REQUEST, "Receiver phone number is required!");
+    }
+    const receiverIdentifier = { phone };
+    const parcel = yield parcel_service_1.ParcelServices.cancelParcelByReceiver(parcelId, receiverIdentifier, note);
+    (0, sendResponse_1.sendResponse)(res, {
+        success: true,
+        statusCode: http_status_codes_1.default.OK,
+        message: "Parcel cancelled successfully by guest receiver✅",
+        data: parcel,
+    });
+}));
 exports.ParcelControllers = {
     createParcel,
     getParcelsBySender,
     getParcelById,
     getParcelByTrackingId,
+    getParcelByTrackingIdAndPhone,
+    getIncomingParcelsByPhone,
+    getIncomingParcelsByReceiverId,
+    getAllParcels,
+    cancelParcel,
+    approveParcelByReceiver,
+    cancelParcelByReceiver,
+    guestApproveParcel,
+    guestCancelParcel,
 };

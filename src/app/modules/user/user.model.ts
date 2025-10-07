@@ -29,6 +29,7 @@ const userSchema = new Schema<IUser>(
     password: { type: String },
     phone: { type: String, trim: true },
     address: { type: String, trim: true },
+    city: { type: String, trim: true },
     picture: { type: String },
     accountStatus: {
       type: String,

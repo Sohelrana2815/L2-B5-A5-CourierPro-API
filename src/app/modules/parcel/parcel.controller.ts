@@ -5,6 +5,7 @@ import { catchAsync } from "../../utils/catchAsync";
 import { sendResponse } from "../../utils/sendResponse";
 import { ParcelServices } from "./parcel.service";
 import { JwtPayload } from "jsonwebtoken";
+import AppError from "../../errorHelpers/AppError";
 
 // CREATE PARCEL (Sender Role)
 const createParcel = catchAsync(
@@ -75,6 +76,76 @@ const getParcelByTrackingId = catchAsync(
   }
 );
 
+// GET PARCEL BY TRACKING ID AND RECEIVER PHONE (for guest receivers)
+const getParcelByTrackingIdAndPhone = catchAsync(
+  async (req: Request, res: Response, next: NextFunction) => {
+    const { trackingId } = req.params;
+    const { phone } = req.body;
+    if (!phone) {
+      throw new AppError(
+        httpStatus.BAD_REQUEST,
+        "Receiver phone number is required!"
+      );
+    }
+  }
+);
+// GET INCOMING PARCELS BY RECEIVER PHONE (for guest receivers)
+const getIncomingParcelsByPhone = catchAsync(
+  async (req: Request, res: Response, next: NextFunction) => {
+    const { phone } = req.body;
+
+    if (!phone) {
+      throw new AppError(
+        httpStatus.BAD_REQUEST,
+        "Receiver phone number is required!"
+      );
+    }
+
+    const result = await ParcelServices.getIncomingParcelsByPhone(phone);
+
+    sendResponse(res, {
+      success: true,
+      statusCode: httpStatus.OK,
+      message: "Incoming parcels retrieved successfully✅",
+      data: result.data,
+      meta: result.meta,
+    });
+  }
+);
+
+// GET INCOMING PARCELS BY RECEIVER ID (for registered receivers)
+const getIncomingParcelsByReceiverId = catchAsync(
+  async (req: Request, res: Response, next: NextFunction) => {
+    const user = req.user as JwtPayload;
+    const receiverId = user.userId;
+
+    const result = await ParcelServices.getIncomingParcelsByReceiverId(receiverId);
+
+    sendResponse(res, {
+      success: true,
+      statusCode: httpStatus.OK,
+      message: "Incoming parcels retrieved successfully✅",
+      data: result.data,
+      meta: result.meta,
+    });
+  }
+);
+
+// GET ALL PARCELS (Admin Role)
+const getAllParcels = catchAsync(
+  async (req: Request, res: Response, next: NextFunction) => {
+    const result = await ParcelServices.getAllParcels();
+
+    sendResponse(res, {
+      success: true,
+      statusCode: httpStatus.OK,
+      message: "All parcels retrieved successfully✅",
+      data: result.data,
+      meta: result.meta,
+    });
+  }
+);
+
 // CANCEL PARCEL (Sender Role)
 const cancelParcel = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
@@ -94,10 +165,88 @@ const cancelParcel = catchAsync(
   }
 );
 
+// RECEIVER APPROVE PARCEL (Registered receiver, auth required)
+const approveParcelByReceiver = catchAsync(
+  async (req: Request, res: Response, next: NextFunction) => {
+    const parcelId = req.params.id;
+    const user = req.user as JwtPayload;
+    const receiverIdentifier = { userId: user.userId };
+    const parcel = await ParcelServices.approveParcelByReceiver(parcelId, receiverIdentifier);
+    sendResponse(res, {
+      success: true,
+      statusCode: httpStatus.OK,
+      message: "Parcel approved successfully by receiver✅",
+      data: parcel,
+    });
+  }
+);
+
+// RECEIVER CANCEL PARCEL (Registered receiver, auth required)
+const cancelParcelByReceiver = catchAsync(
+  async (req: Request, res: Response, next: NextFunction) => {
+    const parcelId = req.params.id;
+    const user = req.user as JwtPayload;
+    const { note } = req.body;
+    const receiverIdentifier = { userId: user.userId };
+    const parcel = await ParcelServices.cancelParcelByReceiver(parcelId, receiverIdentifier, note);
+    sendResponse(res, {
+      success: true,
+      statusCode: httpStatus.OK,
+      message: "Parcel cancelled successfully by receiver✅",
+      data: parcel,
+    });
+  }
+);
+
+// GUEST APPROVE PARCEL (No auth required)
+const guestApproveParcel = catchAsync(
+  async (req: Request, res: Response, next: NextFunction) => {
+    const parcelId = req.params.id;
+    const { phone } = req.body;
+    if (!phone) {
+      throw new AppError(httpStatus.BAD_REQUEST, "Receiver phone number is required!");
+    }
+    const receiverIdentifier = { phone };
+    const parcel = await ParcelServices.approveParcelByReceiver(parcelId, receiverIdentifier);
+    sendResponse(res, {
+      success: true,
+      statusCode: httpStatus.OK,
+      message: "Parcel approved successfully by guest receiver✅",
+      data: parcel,
+    });
+  }
+);
+
+// GUEST CANCEL PARCEL (No auth required)
+const guestCancelParcel = catchAsync(
+  async (req: Request, res: Response, next: NextFunction) => {
+    const parcelId = req.params.id;
+    const { phone, note } = req.body;
+    if (!phone) {
+      throw new AppError(httpStatus.BAD_REQUEST, "Receiver phone number is required!");
+    }
+    const receiverIdentifier = { phone };
+    const parcel = await ParcelServices.cancelParcelByReceiver(parcelId, receiverIdentifier, note);
+    sendResponse(res, {
+      success: true,
+      statusCode: httpStatus.OK,
+      message: "Parcel cancelled successfully by guest receiver✅",
+      data: parcel,
+    });
+  }
+);
 export const ParcelControllers = {
   createParcel,
   getParcelsBySender,
   getParcelById,
   getParcelByTrackingId,
+  getParcelByTrackingIdAndPhone,
+  getIncomingParcelsByPhone,
+  getIncomingParcelsByReceiverId,
+  getAllParcels,
   cancelParcel,
+  approveParcelByReceiver,
+  cancelParcelByReceiver,
+  guestApproveParcel,
+  guestCancelParcel,
 };

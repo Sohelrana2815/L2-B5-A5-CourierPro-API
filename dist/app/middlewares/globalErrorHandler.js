@@ -6,10 +6,10 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.globalErrorHandler = void 0;
 const env_1 = require("../config/env");
 const AppError_1 = __importDefault(require("../errorHelpers/AppError"));
-const handleDuplicateError_1 = require("../helpers/handleDuplicateError");
 const handleZodError_1 = require("../helpers/handleZodError");
 const handleCastError_1 = require("../helpers/handleCastError");
 const handleValidationError_1 = require("../helpers/handleValidationError");
+const handleDuplicateError_1 = require("../helpers/handleDuplicateError");
 // Global Express Error Handler Middleware.
 const globalErrorHandler = (err, req, res, 
 // eslint-disable-next-line @typescript-eslint/no-unused-vars

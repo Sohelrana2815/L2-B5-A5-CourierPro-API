@@ -3,31 +3,8 @@ import AppError from "../../errorHelpers/AppError";
 import { IParcel, ParcelStatus } from "./parcel.interface";
 import Parcel from "./parcel.model";
 import { Types } from "mongoose";
-
-// Calculate fee based on weight (simple pricing logic)
-const calculateFee = (weightKg: number): number => {
-  const basePrice = 50; // Base price  in BDT
-  const pricePerKg = 20; // Price will increase per kg in BDT
-
-  if (typeof weightKg !== "number" || !isFinite(weightKg)) {
-    throw new AppError(httpStatus.BAD_REQUEST, "Invalid weight");
-  }
-  if (weightKg < 0.1) {
-    throw new AppError(
-      httpStatus.BAD_REQUEST,
-      "Weight must be at least 0.1 kg"
-    );
-  }
-
-  if (weightKg <= 1) {
-    return basePrice;
-  } else {
-    const extra = Math.max(0, weightKg - 1);
-    const fee = basePrice + extra * pricePerKg;
-    return Math.round(fee * 100) / 100;
-  }
-};
-
+import { calculateFee } from "../../utils/fee-calculator";
+import { handleValidateReceiverInfo } from "../../helpers/handleValidateReceiverInfo";
 
 // CREATE PARCEL (Sender Role)
 const createParcel = async (
@@ -44,6 +21,9 @@ const createParcel = async (
     );
   }
 
+  // Validate receiver information against registered users
+  const receiverValidation = await handleValidateReceiverInfo(receiverInfo);
+
   // Calculate delivery fee based on weight
   const fee = calculateFee(parcelDetails.weightKg);
 
@@ -58,7 +38,8 @@ const createParcel = async (
   // Create the parcel
   const newParcel = await Parcel.create({
     senderId: new Types.ObjectId(senderId),
-    receiverInfo,
+    receiverId: receiverValidation.receiverId,
+    receiverInfo: receiverValidation.validatedReceiverInfo,
     parcelDetails,
     fee,
     currentStatus: ParcelStatus.REQUESTED,
@@ -70,9 +51,6 @@ const createParcel = async (
 
   return newParcel;
 };
-
-
-
 
 // GET ALL PARCELS BY SENDER
 const getParcelsBySender = async (senderId: string) => {
@@ -111,8 +89,93 @@ const getParcelByTrackingId = async (trackingId: string) => {
   if (!parcel) {
     throw new AppError(httpStatus.NOT_FOUND, "Parcel not found!");
   }
+  return {
+    parcel,
+  };
+};
+
+// GET PARCEL BY TRACKING ID AND RECEIVER PHONE (for guest receivers)
+const getParcelByTrackingIdAndPhone = async (
+  trackingId: string,
+  receiverPhone: string
+) => {
+  const parcel = await Parcel.findOne({
+    trackingId,
+    "receiverInfo.phone": receiverPhone,
+  });
+
+  if (!parcel) {
+    throw new AppError(
+      httpStatus.NOT_FOUND,
+      "Parcel not found or phone number doesn't match!"
+    );
+  }
 
   return parcel;
+};
+
+// GET INCOMING PARCELS BY RECEIVER PHONE (for guest receivers)
+const getIncomingParcelsByPhone = async (receiverPhone: string) => {
+  const parcels = await Parcel.find({
+    "receiverInfo.phone": receiverPhone,
+    currentStatus: {
+      $in: [
+        ParcelStatus.REQUESTED,
+        ParcelStatus.APPROVED,
+        ParcelStatus.PICKED_UP,
+        ParcelStatus.IN_TRANSIT,
+      ],
+    },
+  }).sort({ createdAt: -1 });
+
+  const total = await Parcel.countDocuments({
+    "receiverInfo.phone": receiverPhone,
+    currentStatus: {
+      $in: [
+        ParcelStatus.REQUESTED,
+        ParcelStatus.APPROVED,
+        ParcelStatus.PICKED_UP,
+        ParcelStatus.IN_TRANSIT,
+      ],
+    },
+  });
+
+  return {
+    data: parcels,
+    meta: { total },
+  };
+};
+
+// GET INCOMING PARCELS BY RECEIVER ID (for registered receivers)
+const getIncomingParcelsByReceiverId = async (receiverId: string) => {
+  const parcels = await Parcel.find({
+    receiverId: new Types.ObjectId(receiverId),
+    currentStatus: {
+      $in: [
+        ParcelStatus.REQUESTED,
+        ParcelStatus.APPROVED,
+        ParcelStatus.PICKED_UP,
+        ParcelStatus.IN_TRANSIT,
+      ],
+    },
+  }).sort({ createdAt: -1 });
+
+  const total = await Parcel.countDocuments({
+    receiverId: new Types.ObjectId(receiverId),
+    currentStatus: {
+      $in: [
+        ParcelStatus.REQUESTED,
+        ParcelStatus.APPROVED,
+        ParcelStatus.PICKED_UP,
+        ParcelStatus.IN_TRANSIT,
+      ],
+    },
+  });
+
+  return {
+    data: parcels,
+    meta: { total },
+  };
 };
 
 // CANCEL PARCEL (Sender Role)
@@ -128,7 +191,6 @@ const cancelParcel = async (
     throw new AppError(httpStatus.NOT_FOUND, "Parcel not found!");
   }
 
-  // Check if the user is the sender
   if (parcel.senderId.toString() !== senderId) {
     throw new AppError(
       httpStatus.FORBIDDEN,
@@ -138,10 +200,7 @@ const cancelParcel = async (
 
   // Check if the parcel is already cancelled
   if (parcel.currentStatus === ParcelStatus.CANCELLED) {
-    throw new AppError(
-      httpStatus.BAD_REQUEST,
-      "Parcel is already cancelled!"
-    );
+    throw new AppError(httpStatus.BAD_REQUEST, "Parcel is already cancelled!");
   }
 
   // Check if the parcel can be cancelled (only REQUESTED or APPROVED status)
@@ -174,10 +233,166 @@ const cancelParcel = async (
   return parcel;
 };
 
+// GET ALL PARCELS (Admin Role)
+const getAllParcels = async () => {
+  const parcels = await Parcel.find({})
+    .populate("senderId", "name email phone")
+    .populate("receiverId", "name email phone")
+    .sort({ createdAt: -1 });
+
+  const total = await Parcel.countDocuments();
+
+  return {
+    data: parcels,
+    meta: { total },
+  };
+};
+
+// RECEIVER APPROVE PARCEL (For both registered and guest receivers)
+const approveParcelByReceiver = async (
+  parcelId: string,
+  receiverIdentifier: { userId?: string; phone?: string }
+): Promise<IParcel> => {
+  // Find the parcel
+  const parcel = await Parcel.findById(parcelId);
+
+  if (!parcel) {
+    throw new AppError(httpStatus.NOT_FOUND, "Parcel not found!");
+  }
+
+  // Check if parcel can be approved (only REQUESTED status)
+  if (parcel.currentStatus !== ParcelStatus.REQUESTED) {
+    throw new AppError(
+      httpStatus.BAD_REQUEST,
+      `Cannot approve parcel with status: ${parcel.currentStatus}. Only parcels with REQUESTED status can be approved.`
+    );
+  }
+
+  // Validate receiver authorization
+  let isAuthorizedReceiver = false;
+
+  if (receiverIdentifier.userId) {
+    // For registered receivers - check receiverId matches
+    if (
+      parcel.receiverId &&
+      parcel.receiverId.toString() === receiverIdentifier.userId
+    ) {
+      isAuthorizedReceiver = true;
+    }
+  } else if (receiverIdentifier.phone) {
+    // For guest receivers - check phone matches
+    if (parcel.receiverInfo.phone === receiverIdentifier.phone) {
+      isAuthorizedReceiver = true;
+    }
+  }
+
+  if (!isAuthorizedReceiver) {
+    throw new AppError(
+      httpStatus.FORBIDDEN,
+      "You are not authorized to approve this parcel!"
+    );
+  }
+
+  // Update the parcel status to APPROVED
+  parcel.currentStatus = ParcelStatus.APPROVED;
+
+  // Add status log entry
+  const approveStatusLog = {
+    status: ParcelStatus.APPROVED,
+    timestamp: new Date(),
+    updatedBy: receiverIdentifier.userId
+      ? new Types.ObjectId(receiverIdentifier.userId)
+      : new Types.ObjectId(), // For guest users, we'll use a default ObjectId
+    note: "Parcel approved by receiver",
+  };
+
+  parcel.statusHistory.push(approveStatusLog);
+
+  // Save the updated parcel
+  await parcel.save();
+
+  return parcel;
+};
+
+// RECEIVER CANCEL PARCEL (For both registered and guest receivers)
+const cancelParcelByReceiver = async (
+  parcelId: string,
+  receiverIdentifier: { userId?: string; phone?: string },
+  note?: string
+): Promise<IParcel> => {
+  // Find the parcel
+  const parcel = await Parcel.findById(parcelId);
+
+  if (!parcel) {
+    throw new AppError(httpStatus.NOT_FOUND, "Parcel not found!");
+  }
+
+  // Check if parcel can be cancelled (only REQUESTED or APPROVED status)
+  if (
+    parcel.currentStatus !== ParcelStatus.REQUESTED &&
+    parcel.currentStatus !== ParcelStatus.APPROVED
+  ) {
+    throw new AppError(
+      httpStatus.BAD_REQUEST,
+      `Cannot cancel parcel with status: ${parcel.currentStatus}. Only parcels with REQUESTED or APPROVED status can be cancelled.`
+    );
+  }
+
+  // Validate receiver authorization
+  let isAuthorizedReceiver = false;
+
+  if (receiverIdentifier.userId) {
+    // For registered receivers - check receiverId matches
+    if (
+      parcel.receiverId &&
+      parcel.receiverId.toString() === receiverIdentifier.userId
+    ) {
+      isAuthorizedReceiver = true;
+    }
+  } else if (receiverIdentifier.phone) {
+    // For guest receivers - check phone matches
+    if (parcel.receiverInfo.phone === receiverIdentifier.phone) {
+      isAuthorizedReceiver = true;
+    }
+  }
+
+  if (!isAuthorizedReceiver) {
+    throw new AppError(
+      httpStatus.FORBIDDEN,
+      "You are not authorized to cancel this parcel!"
+    );
+  }
+
+  // Update the parcel status to CANCELLED
+  parcel.currentStatus = ParcelStatus.CANCELLED;
+
+  // Add status log entry
+  const cancelStatusLog = {
+    status: ParcelStatus.CANCELLED,
+    timestamp: new Date(),
+    updatedBy: receiverIdentifier.userId
+      ? new Types.ObjectId(receiverIdentifier.userId)
+      : new Types.ObjectId(), // For guest users, we'll use a default ObjectId
+    note: note || "Parcel cancelled by receiver",
+  };
+
+  parcel.statusHistory.push(cancelStatusLog);
+
+  // Save the updated parcel
+  await parcel.save();
+
+  return parcel;
+};
 export const ParcelServices = {
   createParcel,
   getParcelsBySender,
   getParcelById,
   getParcelByTrackingId,
+  getParcelByTrackingIdAndPhone,
+  getIncomingParcelsByPhone,
+  getIncomingParcelsByReceiverId,
+  getAllParcels,
   cancelParcel,
+  approveParcelByReceiver,
+  cancelParcelByReceiver,
 };

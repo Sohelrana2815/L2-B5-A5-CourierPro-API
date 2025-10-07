@@ -23,6 +23,7 @@ const userSchema = new mongoose_1.Schema({
     password: { type: String },
     phone: { type: String, trim: true },
     address: { type: String, trim: true },
+    city: { type: String, trim: true },
     picture: { type: String },
     accountStatus: {
         type: String,
@@ -33,7 +34,7 @@ const userSchema = new mongoose_1.Schema({
     role: {
         type: String,
         enum: Object.values(user_interface_1.Role),
-        default: user_interface_1.Role.SENDER,
+        required: true,
         index: true,
     },
     isVerified: { type: Boolean, default: false },

@@ -109,7 +109,19 @@ const resetPassword = (0, catchAsync_1.catchAsync)((req, res, next) => __awaiter
     });
 }));
 const googleCallbackController = (0, catchAsync_1.catchAsync)((req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
-    let redirectTo = req.query.state ? req.query.state : "";
+    let redirectTo = "/";
+    // Parse state to get redirect path
+    try {
+        const state = req.query.state ? req.query.state : "";
+        if (state) {
+            const parsedState = JSON.parse(state);
+            redirectTo = parsedState.redirect || "/";
+        }
+    }
+    catch (e) {
+        // If state parsing fails, use default redirect
+        redirectTo = req.query.state ? req.query.state : "/";
+    }
     if (redirectTo.startsWith("/")) {
         redirectTo = redirectTo.slice(1);
     }
