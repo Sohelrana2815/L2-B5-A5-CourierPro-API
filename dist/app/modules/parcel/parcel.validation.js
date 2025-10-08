@@ -3,7 +3,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getIncomingParcelsByPhoneZodSchema = exports.cancelParcelByReceiverZodSchema = exports.approveParcelByReceiverZodSchema = exports.getParcelByTrackingIdAndPhoneZodSchema = exports.cancelParcelZodSchema = exports.updateParcelZodSchema = exports.updateParcelStatusZodSchema = exports.createParcelZodSchema = void 0;
+exports.getIncomingParcelsByPhoneZodSchema = exports.blockUnblockParcelZodSchema = exports.cancelParcelByReceiverZodSchema = exports.approveParcelByReceiverZodSchema = exports.getParcelByTrackingIdAndPhoneZodSchema = exports.cancelParcelZodSchema = exports.updateParcelZodSchema = exports.updateParcelStatusZodSchema = exports.createParcelZodSchema = void 0;
 const zod_1 = __importDefault(require("zod"));
 const parcel_interface_1 = require("./parcel.interface");
 // // Receiver Info Schema
@@ -113,6 +113,13 @@ exports.cancelParcelByReceiverZodSchema = zod_1.default.object({
         error: "Invalid Bangladeshi mobile number",
     })
         .optional(), // Optional for registered receivers
+    note: zod_1.default
+        .string()
+        .max(500, { error: "Note cannot exceed 500 characters" })
+        .trim()
+        .optional(),
+});
+exports.blockUnblockParcelZodSchema = zod_1.default.object({
     note: zod_1.default
         .string()
         .max(500, { error: "Note cannot exceed 500 characters" })

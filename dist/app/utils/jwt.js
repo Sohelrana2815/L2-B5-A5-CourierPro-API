@@ -15,7 +15,7 @@ const generateToken = (payload, secret, expiresIn) => {
 exports.generateToken = generateToken;
 const verifyToken = (token, secret) => {
     const verifiedToken = jsonwebtoken_1.default.verify(token, secret);
-    console.log(verifiedToken);
+    // console.log(verifiedToken);
     return verifiedToken;
 };
 exports.verifyToken = verifyToken;

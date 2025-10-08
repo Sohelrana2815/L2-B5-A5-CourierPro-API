@@ -132,6 +132,15 @@ export const cancelParcelByReceiverZodSchema = z.object({
     .trim()
     .optional(),
 });
+
+export const blockUnblockParcelZodSchema = z.object({
+  note: z
+    .string()
+    .max(500, { error: "Note cannot exceed 500 characters" })
+    .trim()
+    .optional(),
+});
+
 export const getIncomingParcelsByPhoneZodSchema = z.object({
   phone: z
     .string({ error: "Receiver phone is required" })

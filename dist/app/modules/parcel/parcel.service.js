@@ -314,6 +314,62 @@ const cancelParcelByReceiver = (parcelId, receiverIdentifier, note) => __awaiter
     yield parcel.save();
     return parcel;
 });
+// BLOCK PARCEL (Admin Role)
+const blockParcel = (parcelId, adminId, note) => __awaiter(void 0, void 0, void 0, function* () {
+    // Find the parcel
+    const parcel = yield parcel_model_1.default.findById(parcelId);
+    if (!parcel) {
+        throw new AppError_1.default(http_status_codes_1.default.NOT_FOUND, "Parcel not found!");
+    }
+    // Check if the parcel is already blocked
+    if (parcel.isBlocked) {
+        throw new AppError_1.default(http_status_codes_1.default.BAD_REQUEST, "Parcel is already blocked!");
+    }
+    // Update the parcel to blocked status
+    parcel.isBlocked = true;
+    // Add status log entry for blocking
+    const blockStatusLog = {
+        status: parcel_interface_1.ParcelStatus.ON_HOLD,
+        timestamp: new Date(),
+        updatedBy: new mongoose_1.Types.ObjectId(adminId),
+        note: note || "Parcel blocked by admin",
+    };
+    parcel.statusHistory.push(blockStatusLog);
+    // If parcel was in transit or approved, set status to ON_HOLD
+    if (parcel.currentStatus === parcel_interface_1.ParcelStatus.APPROVED ||
+        parcel.currentStatus === parcel_interface_1.ParcelStatus.PICKED_UP ||
+        parcel.currentStatus === parcel_interface_1.ParcelStatus.IN_TRANSIT) {
+        parcel.currentStatus = parcel_interface_1.ParcelStatus.ON_HOLD;
+    }
+    // Save the updated parcel
+    yield parcel.save();
+    return parcel;
+});
+// UNBLOCK PARCEL (Admin Role)
+const unblockParcel = (parcelId, adminId, note) => __awaiter(void 0, void 0, void 0, function* () {
+    // Find the parcel
+    const parcel = yield parcel_model_1.default.findById(parcelId);
+    if (!parcel) {
+        throw new AppError_1.default(http_status_codes_1.default.NOT_FOUND, "Parcel not found!");
+    }
+    // Check if the parcel is not blocked
+    if (!parcel.isBlocked) {
+        throw new AppError_1.default(http_status_codes_1.default.BAD_REQUEST, "Parcel is not blocked!");
+    }
+    // Update the parcel to unblocked status
+    parcel.isBlocked = false;
+    // Add status log entry for unblocking
+    const unblockStatusLog = {
+        status: parcel.currentStatus, // Keep the current status
+        timestamp: new Date(),
+        updatedBy: new mongoose_1.Types.ObjectId(adminId),
+        note: note || "Parcel unblocked by admin",
+    };
+    parcel.statusHistory.push(unblockStatusLog);
+    // Save the updated parcel
+    yield parcel.save();
+    return parcel;
+});
 exports.ParcelServices = {
     createParcel,
     getParcelsBySender,
@@ -326,4 +382,6 @@ exports.ParcelServices = {
     cancelParcel,
     approveParcelByReceiver,
     cancelParcelByReceiver,
+    blockParcel,
+    unblockParcel,
 };

@@ -66,7 +66,10 @@ const getParcelByTrackingId = catchAsync(
     const { trackingId } = req.params;
     const isAuthenticated = !!req.user; // Check if user is authenticated
 
-    const parcel = await ParcelServices.getParcelByTrackingId(trackingId, isAuthenticated);
+    const parcel = await ParcelServices.getParcelByTrackingId(
+      trackingId,
+      isAuthenticated
+    );
 
     sendResponse(res, {
       success: true,
@@ -83,7 +86,6 @@ const getParcelByTrackingIdAndPhone = catchAsync(
     const { trackingId } = req.params;
     const { phone } = req.body;
 
-    console.log(trackingId, phone);
     if (!phone) {
       throw new AppError(
         httpStatus.BAD_REQUEST,
@@ -270,6 +272,45 @@ const guestCancelParcel = catchAsync(
     });
   }
 );
+
+// BLOCK PARCEL (Admin Role)
+const blockParcel = catchAsync(
+  async (req: Request, res: Response, next: NextFunction) => {
+    const parcelId = req.params.id;
+    const user = req.user as JwtPayload;
+    const adminId = user.userId;
+    const { note } = req.body;
+
+    const parcel = await ParcelServices.blockParcel(parcelId, adminId, note);
+
+    sendResponse(res, {
+      success: true,
+      statusCode: httpStatus.OK,
+      message: "Parcel blocked successfully✅",
+      data: parcel,
+    });
+  }
+);
+
+// UNBLOCK PARCEL (Admin Role)
+const unblockParcel = catchAsync(
+  async (req: Request, res: Response, next: NextFunction) => {
+    const parcelId = req.params.id;
+    const user = req.user as JwtPayload;
+    const adminId = user.userId;
+    const { note } = req.body;
+
+    const parcel = await ParcelServices.unblockParcel(parcelId, adminId, note);
+
+    sendResponse(res, {
+      success: true,
+      statusCode: httpStatus.OK,
+      message: "Parcel unblocked successfully✅",
+      data: parcel,
+    });
+  }
+);
+
 export const ParcelControllers = {
   createParcel,
   getParcelsBySender,
@@ -284,4 +325,6 @@ export const ParcelControllers = {
   cancelParcelByReceiver,
   guestApproveParcel,
   guestCancelParcel,
+  blockParcel,
+  unblockParcel,
 };

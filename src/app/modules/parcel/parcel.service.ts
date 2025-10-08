@@ -421,6 +421,90 @@ const cancelParcelByReceiver = async (
 
   return parcel;
 };
+
+// BLOCK PARCEL (Admin Role)
+const blockParcel = async (
+  parcelId: string,
+  adminId: string,
+  note?: string
+): Promise<IParcel> => {
+  // Find the parcel
+  const parcel = await Parcel.findById(parcelId);
+
+  if (!parcel) {
+    throw new AppError(httpStatus.NOT_FOUND, "Parcel not found!");
+  }
+
+  // Check if the parcel is already blocked
+  if (parcel.isBlocked) {
+    throw new AppError(httpStatus.BAD_REQUEST, "Parcel is already blocked!");
+  }
+
+  // Update the parcel to blocked status
+  parcel.isBlocked = true;
+
+  // Add status log entry for blocking
+  const blockStatusLog = {
+    status: ParcelStatus.ON_HOLD,
+    timestamp: new Date(),
+    updatedBy: new Types.ObjectId(adminId),
+    note: note || "Parcel blocked by admin",
+  };
+
+  parcel.statusHistory.push(blockStatusLog);
+
+  // If parcel was in transit or approved, set status to ON_HOLD
+  if (
+    parcel.currentStatus === ParcelStatus.APPROVED ||
+    parcel.currentStatus === ParcelStatus.PICKED_UP ||
+    parcel.currentStatus === ParcelStatus.IN_TRANSIT
+  ) {
+    parcel.currentStatus = ParcelStatus.ON_HOLD;
+  }
+
+  // Save the updated parcel
+  await parcel.save();
+
+  return parcel;
+};
+
+// UNBLOCK PARCEL (Admin Role)
+const unblockParcel = async (
+  parcelId: string,
+  adminId: string,
+  note?: string
+): Promise<IParcel> => {
+  // Find the parcel
+  const parcel = await Parcel.findById(parcelId);
+
+  if (!parcel) {
+    throw new AppError(httpStatus.NOT_FOUND, "Parcel not found!");
+  }
+
+  // Check if the parcel is not blocked
+  if (!parcel.isBlocked) {
+    throw new AppError(httpStatus.BAD_REQUEST, "Parcel is not blocked!");
+  }
+
+  // Update the parcel to unblocked status
+  parcel.isBlocked = false;
+
+  // Add status log entry for unblocking
+  const unblockStatusLog = {
+    status: parcel.currentStatus, // Keep the current status
+    timestamp: new Date(),
+    updatedBy: new Types.ObjectId(adminId),
+    note: note || "Parcel unblocked by admin",
+  };
+
+  parcel.statusHistory.push(unblockStatusLog);
+
+  // Save the updated parcel
+  await parcel.save();
+
+  return parcel;
+};
+
 export const ParcelServices = {
   createParcel,
   getParcelsBySender,
@@ -433,4 +517,6 @@ export const ParcelServices = {
   cancelParcel,
   approveParcelByReceiver,
   cancelParcelByReceiver,
+  blockParcel,
+  unblockParcel,
 };

@@ -38,20 +38,24 @@ process.on("SIGTERM", () => {
     console.log("SIGTERM is received");
     if (server) {
         server.close(() => {
-            process.exit(1);
+            process.exit(0);
         });
     }
-    process.exit(1);
+    else {
+        process.exit(0);
+    }
 });
 // SIGINT
 process.on("SIGINT", () => {
     console.log("SIGINT signal recieved... Server shutting down..");
     if (server) {
         server.close(() => {
-            process.exit(1);
+            process.exit(0);
         });
     }
-    process.exit(1);
+    else {
+        process.exit(0);
+    }
 });
 // Unhandled rejection error
 process.on("unhandledRejection", (err) => {
@@ -61,7 +65,9 @@ process.on("unhandledRejection", (err) => {
             process.exit(1);
         });
     }
-    process.exit(1);
+    else {
+        process.exit(1);
+    }
 });
 // Uncaught exception error
 process.on("uncaughtException", (err) => {
@@ -71,14 +77,7 @@ process.on("uncaughtException", (err) => {
             process.exit(1);
         });
     }
-    process.exit(1);
+    else {
+        process.exit(1);
+    }
 });
-/**
- * Examples
- * 1. Unhandled Rejection
- * 2. Uncaught Exception
- */
-// Unhandled Rejection
-// Promise.reject(new Error("Promise Error"));
-// uncaught Exception
-// throw new Error("Uncaught Exception");

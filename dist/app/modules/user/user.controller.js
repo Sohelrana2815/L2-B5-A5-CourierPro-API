@@ -17,13 +17,56 @@ const http_status_codes_1 = __importDefault(require("http-status-codes"));
 const user_service_1 = require("./user.service");
 const catchAsync_1 = require("../../utils/catchAsync");
 const sendResponse_1 = require("../../utils/sendResponse");
-// CREATE USER
+// ADMIN: Block user
+const blockUser = (0, catchAsync_1.catchAsync)((req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
+    const userId = req.params.id;
+    const user = yield user_service_1.UserServices.blockUser(userId);
+    (0, sendResponse_1.sendResponse)(res, {
+        success: true,
+        statusCode: http_status_codes_1.default.OK,
+        message: "User blocked successfully",
+        data: user,
+    });
+}));
+// ADMIN: Unblock user
+const unblockUser = (0, catchAsync_1.catchAsync)((req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
+    const userId = req.params.id;
+    const user = yield user_service_1.UserServices.unblockUser(userId);
+    (0, sendResponse_1.sendResponse)(res, {
+        success: true,
+        statusCode: http_status_codes_1.default.OK,
+        message: "User unblocked successfully",
+        data: user,
+    });
+}));
+// ADMIN: Restore soft deleted user
+const restoreUser = (0, catchAsync_1.catchAsync)((req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
+    const userId = req.params.id;
+    const user = yield user_service_1.UserServices.restoreUser(userId);
+    (0, sendResponse_1.sendResponse)(res, {
+        success: true,
+        statusCode: http_status_codes_1.default.OK,
+        message: "User restored successfully",
+        data: user,
+    });
+}));
+// ADMIN: Soft delete user
+const softDeleteUser = (0, catchAsync_1.catchAsync)((req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
+    const userId = req.params.id;
+    const user = yield user_service_1.UserServices.softDeleteUser(userId);
+    (0, sendResponse_1.sendResponse)(res, {
+        success: true,
+        statusCode: http_status_codes_1.default.OK,
+        message: "User soft deleted successfully",
+        data: user,
+    });
+}));
 const createUser = (0, catchAsync_1.catchAsync)((req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
     const user = yield user_service_1.UserServices.createUser(req.body);
     (0, sendResponse_1.sendResponse)(res, {
         success: true,
         statusCode: http_status_codes_1.default.CREATED,
-        message: "User created successfully✅",
+        message: "User created successfully",
         data: user,
     });
 }));
@@ -33,7 +76,7 @@ const getAllUsers = (0, catchAsync_1.catchAsync)((req, res, next) => __awaiter(v
     (0, sendResponse_1.sendResponse)(res, {
         success: true,
         statusCode: http_status_codes_1.default.OK,
-        message: "All Users Retrieved successfully✅",
+        message: "All Users Retrieved successfully",
         data: result.data,
         meta: result.meta,
     });
@@ -47,7 +90,7 @@ const updateUser = (0, catchAsync_1.catchAsync)((req, res, next) => __awaiter(vo
     (0, sendResponse_1.sendResponse)(res, {
         success: true,
         statusCode: http_status_codes_1.default.OK,
-        message: "User Updated Successfully✅",
+        message: "User Updated Successfully",
         data: user,
     });
 }));
@@ -55,4 +98,8 @@ exports.UserControllers = {
     createUser,
     getAllUsers,
     updateUser,
+    blockUser,
+    unblockUser,
+    softDeleteUser,
+    restoreUser,
 };

@@ -65,11 +65,6 @@ const getNewAccessToken = (0, catchAsync_1.catchAsync)((req, res, next) => __awa
         throw new AppError_1.default(http_status_codes_1.default.BAD_REQUEST, "No  Refresh Token received.");
     }
     const tokenInfo = yield auth_service_1.AuthServices.getNewAccessToken(refreshToken);
-    // Set newly generated access token in the cookie
-    // res.cookie("accessToken", tokenInfo.accessToken, {
-    //   httpOnly: true,
-    //   secure: false,
-    // });
     (0, setCookie_1.setAuthCookie)(res, tokenInfo);
     (0, sendResponse_1.sendResponse)(res, {
         success: true,
@@ -132,12 +127,6 @@ const googleCallbackController = (0, catchAsync_1.catchAsync)((req, res, next) =
     }
     const tokenInfo = (0, userTokens_1.createUserTokens)(user);
     (0, setCookie_1.setAuthCookie)(res, tokenInfo);
-    // sendResponse(res, {
-    //     success: true,
-    //     statusCode: httpStatus.OK,
-    //     message: "Password Changed Successfully",
-    //     data: null,
-    // })
     res.redirect(`${env_1.envVars.FRONTEND_URL}/${redirectTo}`);
 }));
 exports.AuthControllers = {

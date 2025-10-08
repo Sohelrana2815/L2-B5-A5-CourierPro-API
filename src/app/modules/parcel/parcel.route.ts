@@ -11,6 +11,7 @@ import {
   getIncomingParcelsByPhoneZodSchema,
   approveParcelByReceiverZodSchema,
   cancelParcelByReceiverZodSchema,
+  blockUnblockParcelZodSchema,
 } from "./parcel.validation";
 
 const router = Router();
@@ -33,7 +34,7 @@ router.post(
 // GET MY PARCELS - Registered receiver only
 router.get(
   "/my-parcels",
-  checkAuth(Role.RECEIVER, "Only Registered RECEIVER'S can view this route"),
+  checkAuth(Role.RECEIVER, "Only Registered RECEIVERS can view this route"),
   ParcelControllers.getIncomingParcelsByReceiverId
 );
 
@@ -98,11 +99,20 @@ router.patch(
   ParcelControllers.guestApproveParcel
 );
 
-// GUEST CANCEL PARCEL - No auth required
+// BLOCK PARCEL - Admin only
 router.patch(
-  "/guest/:id/cancel",
-  validateRequest(cancelParcelByReceiverZodSchema),
-  ParcelControllers.guestCancelParcel
+  "/admin/:id/block",
+  checkAuth(Role.ADMIN, "Only ADMIN can block parcels"),
+  validateRequest(blockUnblockParcelZodSchema),
+  ParcelControllers.blockParcel
+);
+
+// UNBLOCK PARCEL - Admin only
+router.patch(
+  "/admin/:id/unblock",
+  checkAuth(Role.ADMIN, "Only ADMIN can unblock parcels"),
+  validateRequest(blockUnblockParcelZodSchema),
+  ParcelControllers.unblockParcel
 );
 
 export const ParcelRoutes = router;

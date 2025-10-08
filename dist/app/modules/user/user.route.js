@@ -10,5 +10,12 @@ const user_interface_1 = require("./user.interface");
 const router = (0, express_1.Router)();
 router.post("/register", (0, validateRequest_1.validateRequest)(user_validation_1.createUserZodSchema), user_controller_1.UserControllers.createUser);
 router.get("/all-users", (0, checkAuth_1.checkAuth)(user_interface_1.Role.ADMIN, "Only ADMIN can view all users"), user_controller_1.UserControllers.getAllUsers);
-router.patch("/:id", (0, checkAuth_1.checkAuth)(Object.values(user_interface_1.Role), "You must be logged in to update your profile"), user_controller_1.UserControllers.updateUser);
+// ADMIN: Block user
+router.patch("/:id/block", (0, checkAuth_1.checkAuth)(user_interface_1.Role.ADMIN, "Only ADMIN can block users"), user_controller_1.UserControllers.blockUser);
+// ADMIN: Unblock user
+router.patch("/:id/unblock", (0, checkAuth_1.checkAuth)(user_interface_1.Role.ADMIN, "Only ADMIN can unblock users"), user_controller_1.UserControllers.unblockUser);
+// ADMIN: Soft delete user
+router.patch("/:id/soft-delete", (0, checkAuth_1.checkAuth)(user_interface_1.Role.ADMIN, "Only ADMIN can soft delete users"), user_controller_1.UserControllers.softDeleteUser);
+// ADMIN: Restore soft deleted user
+router.patch("/:id/restore", (0, checkAuth_1.checkAuth)(user_interface_1.Role.ADMIN, "Only ADMIN can restore users"), user_controller_1.UserControllers.restoreUser);
 exports.UserRoutes = router;

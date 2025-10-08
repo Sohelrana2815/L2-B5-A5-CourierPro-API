@@ -24,7 +24,6 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.UserServices = void 0;
-/* eslint-disable @typescript-eslint/no-unused-vars */
 const AppError_1 = __importDefault(require("../../errorHelpers/AppError"));
 const user_interface_1 = require("./user.interface");
 const user_model_1 = __importDefault(require("./user.model"));
@@ -34,29 +33,24 @@ const env_1 = require("../../config/env");
 const createUser = (payload) => __awaiter(void 0, void 0, void 0, function* () {
     const { email, password } = payload, rest = __rest(payload, ["email", "password"]);
     const isUserExist = yield user_model_1.default.findOne({ email });
-    // if (isUserExist) {
-    //   throw new AppError(httpStatus.CONFLICT, "User already exist!");
-    // }
-    // Hash the password
+    if (isUserExist) {
+        throw new AppError_1.default(http_status_codes_1.default.CONFLICT, "User already exist!");
+    }
     const hashedPassword = yield bcryptjs_1.default.hash(password, 10);
-    // Password matching
     const authProvider = {
         provider: "credentials",
         providerId: email,
     };
-    const user = user_model_1.default.create(Object.assign({ password: hashedPassword, email, auths: [authProvider] }, rest));
+    const user = yield user_model_1.default.create(Object.assign({ password: hashedPassword, email, auths: [authProvider] }, rest));
     return user;
 });
 const updateUser = (userId, payload, decodedToken) => __awaiter(void 0, void 0, void 0, function* () {
     const isUserExist = yield user_model_1.default.findById(userId);
-    // if(!isUserExist){
-    //   throw new AppError(httpStatus.BAD_REQUEST, "User does not exist!");
-    // }
+    if (!isUserExist) {
+        throw new AppError_1.default(http_status_codes_1.default.BAD_REQUEST, "User does not exist!");
+    }
     if (payload.role) {
         if (decodedToken.role === user_interface_1.Role.SENDER || decodedToken.role === user_interface_1.Role.RECEIVER) {
-            throw new AppError_1.default(http_status_codes_1.default.BAD_REQUEST, "You are not allowed to update role!");
-        }
-        if (payload.role === user_interface_1.Role.ADMIN && decodedToken.role === user_interface_1.Role.SENDER || decodedToken.role === user_interface_1.Role.RECEIVER) {
             throw new AppError_1.default(http_status_codes_1.default.BAD_REQUEST, "You are not allowed to update role!");
         }
     }
@@ -68,19 +62,58 @@ const updateUser = (userId, payload, decodedToken) => __awaiter(void 0, void 0, 
     if (payload.password) {
         payload.password = yield bcryptjs_1.default.hash(payload.password, env_1.envVars.BCRYPT_SALT_ROUND);
     }
-    const newUpdatedUser = yield user_model_1.default.findByIdAndUpdate(userId, payload, { new: true, runValidators: true });
+    const newUpdatedUser = yield user_model_1.default.findByIdAndUpdate(userId, payload, {
+        new: true,
+        runValidators: true
+    });
     return newUpdatedUser;
 });
 const getAllUsers = () => __awaiter(void 0, void 0, void 0, function* () {
-    const users = yield user_model_1.default.find({});
-    const totalUsers = yield user_model_1.default.countDocuments();
+    const users = yield user_model_1.default.find({ isDeleted: { $ne: true } });
+    const totalUsers = yield user_model_1.default.countDocuments({ isDeleted: { $ne: true } });
     return {
         data: users,
         meta: { total: totalUsers },
     };
 });
+// ADMIN: Block user
+const blockUser = (userId) => __awaiter(void 0, void 0, void 0, function* () {
+    const user = yield user_model_1.default.findByIdAndUpdate(userId, { accountStatus: "BLOCKED" }, { new: true });
+    if (!user) {
+        throw new AppError_1.default(http_status_codes_1.default.NOT_FOUND, "User not found!");
+    }
+    return user;
+});
+// ADMIN: Unblock user
+const unblockUser = (userId) => __awaiter(void 0, void 0, void 0, function* () {
+    const user = yield user_model_1.default.findByIdAndUpdate(userId, { accountStatus: "ACTIVE" }, { new: true });
+    if (!user) {
+        throw new AppError_1.default(http_status_codes_1.default.NOT_FOUND, "User not found!");
+    }
+    return user;
+});
+// ADMIN: Soft delete user
+const softDeleteUser = (userId) => __awaiter(void 0, void 0, void 0, function* () {
+    const user = yield user_model_1.default.findByIdAndUpdate(userId, { isDeleted: true }, { new: true });
+    if (!user) {
+        throw new AppError_1.default(http_status_codes_1.default.NOT_FOUND, "User not found!");
+    }
+    return user;
+});
+// ADMIN: Restore soft deleted user
+const restoreUser = (userId) => __awaiter(void 0, void 0, void 0, function* () {
+    const user = yield user_model_1.default.findByIdAndUpdate(userId, { isDeleted: false }, { new: true });
+    if (!user) {
+        throw new AppError_1.default(http_status_codes_1.default.NOT_FOUND, "User not found!");
+    }
+    return user;
+});
 exports.UserServices = {
     createUser,
     getAllUsers,
-    updateUser
+    updateUser,
+    blockUser,
+    unblockUser,
+    softDeleteUser,
+    restoreUser,
 };

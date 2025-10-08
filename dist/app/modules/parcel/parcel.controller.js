@@ -72,7 +72,6 @@ const getParcelByTrackingId = (0, catchAsync_1.catchAsync)((req, res, next) => _
 const getParcelByTrackingIdAndPhone = (0, catchAsync_1.catchAsync)((req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
     const { trackingId } = req.params;
     const { phone } = req.body;
-    console.log(trackingId, phone);
     if (!phone) {
         throw new AppError_1.default(http_status_codes_1.default.BAD_REQUEST, "Receiver phone number is required!");
     }
@@ -196,6 +195,34 @@ const guestCancelParcel = (0, catchAsync_1.catchAsync)((req, res, next) => __awa
         data: parcel,
     });
 }));
+// BLOCK PARCEL (Admin Role)
+const blockParcel = (0, catchAsync_1.catchAsync)((req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
+    const parcelId = req.params.id;
+    const user = req.user;
+    const adminId = user.userId;
+    const { note } = req.body;
+    const parcel = yield parcel_service_1.ParcelServices.blockParcel(parcelId, adminId, note);
+    (0, sendResponse_1.sendResponse)(res, {
+        success: true,
+        statusCode: http_status_codes_1.default.OK,
+        message: "Parcel blocked successfully✅",
+        data: parcel,
+    });
+}));
+// UNBLOCK PARCEL (Admin Role)
+const unblockParcel = (0, catchAsync_1.catchAsync)((req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
+    const parcelId = req.params.id;
+    const user = req.user;
+    const adminId = user.userId;
+    const { note } = req.body;
+    const parcel = yield parcel_service_1.ParcelServices.unblockParcel(parcelId, adminId, note);
+    (0, sendResponse_1.sendResponse)(res, {
+        success: true,
+        statusCode: http_status_codes_1.default.OK,
+        message: "Parcel unblocked successfully✅",
+        data: parcel,
+    });
+}));
 exports.ParcelControllers = {
     createParcel,
     getParcelsBySender,
@@ -210,4 +237,6 @@ exports.ParcelControllers = {
     cancelParcelByReceiver,
     guestApproveParcel,
     guestCancelParcel,
+    blockParcel,
+    unblockParcel,
 };

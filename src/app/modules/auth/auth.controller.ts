@@ -1,5 +1,5 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 /* eslint-disable @typescript-eslint/no-unused-vars */
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { NextFunction, Request, Response } from "express";
 import { catchAsync } from "../../utils/catchAsync";
 import { sendResponse } from "../../utils/sendResponse";
@@ -53,13 +53,6 @@ const getNewAccessToken = catchAsync(
       throw new AppError(httpStatus.BAD_REQUEST, "No  Refresh Token received.");
     }
     const tokenInfo = await AuthServices.getNewAccessToken(refreshToken);
-
-    // Set newly generated access token in the cookie
-
-    // res.cookie("accessToken", tokenInfo.accessToken, {
-    //   httpOnly: true,
-    //   secure: false,
-    // });
 
     setAuthCookie(res, tokenInfo);
 
@@ -146,13 +139,6 @@ const googleCallbackController = catchAsync(
     const tokenInfo = createUserTokens(user);
 
     setAuthCookie(res, tokenInfo);
-
-    // sendResponse(res, {
-    //     success: true,
-    //     statusCode: httpStatus.OK,
-    //     message: "Password Changed Successfully",
-    //     data: null,
-    // })
 
     res.redirect(`${envVars.FRONTEND_URL}/${redirectTo}`);
   }
