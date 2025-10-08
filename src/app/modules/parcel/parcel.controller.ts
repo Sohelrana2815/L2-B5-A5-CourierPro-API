@@ -60,12 +60,13 @@ const getParcelById = catchAsync(
   }
 );
 
-// GET PARCEL BY TRACKING ID
+// GET PARCEL BY TRACKING ID - Guest only (no auth required but checks for authenticated users)
 const getParcelByTrackingId = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
     const { trackingId } = req.params;
+    const isAuthenticated = !!req.user; // Check if user is authenticated
 
-    const parcel = await ParcelServices.getParcelByTrackingId(trackingId);
+    const parcel = await ParcelServices.getParcelByTrackingId(trackingId, isAuthenticated);
 
     sendResponse(res, {
       success: true,
@@ -81,12 +82,24 @@ const getParcelByTrackingIdAndPhone = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
     const { trackingId } = req.params;
     const { phone } = req.body;
+
+    console.log(trackingId, phone);
     if (!phone) {
       throw new AppError(
         httpStatus.BAD_REQUEST,
         "Receiver phone number is required!"
       );
     }
+    const parcel = await ParcelServices.getParcelByTrackingIdAndPhone(
+      trackingId,
+      phone
+    );
+    sendResponse(res, {
+      success: true,
+      statusCode: httpStatus.OK,
+      message: "Parcel retrieved successfully✅",
+      data: parcel,
+    });
   }
 );
 // GET INCOMING PARCELS BY RECEIVER PHONE (for guest receivers)
@@ -119,7 +132,9 @@ const getIncomingParcelsByReceiverId = catchAsync(
     const user = req.user as JwtPayload;
     const receiverId = user.userId;
 
-    const result = await ParcelServices.getIncomingParcelsByReceiverId(receiverId);
+    const result = await ParcelServices.getIncomingParcelsByReceiverId(
+      receiverId
+    );
 
     sendResponse(res, {
       success: true,
@@ -171,7 +186,10 @@ const approveParcelByReceiver = catchAsync(
     const parcelId = req.params.id;
     const user = req.user as JwtPayload;
     const receiverIdentifier = { userId: user.userId };
-    const parcel = await ParcelServices.approveParcelByReceiver(parcelId, receiverIdentifier);
+    const parcel = await ParcelServices.approveParcelByReceiver(
+      parcelId,
+      receiverIdentifier
+    );
     sendResponse(res, {
       success: true,
       statusCode: httpStatus.OK,
@@ -188,7 +206,11 @@ const cancelParcelByReceiver = catchAsync(
     const user = req.user as JwtPayload;
     const { note } = req.body;
     const receiverIdentifier = { userId: user.userId };
-    const parcel = await ParcelServices.cancelParcelByReceiver(parcelId, receiverIdentifier, note);
+    const parcel = await ParcelServices.cancelParcelByReceiver(
+      parcelId,
+      receiverIdentifier,
+      note
+    );
     sendResponse(res, {
       success: true,
       statusCode: httpStatus.OK,
@@ -204,10 +226,16 @@ const guestApproveParcel = catchAsync(
     const parcelId = req.params.id;
     const { phone } = req.body;
     if (!phone) {
-      throw new AppError(httpStatus.BAD_REQUEST, "Receiver phone number is required!");
+      throw new AppError(
+        httpStatus.BAD_REQUEST,
+        "Receiver phone number is required!"
+      );
     }
     const receiverIdentifier = { phone };
-    const parcel = await ParcelServices.approveParcelByReceiver(parcelId, receiverIdentifier);
+    const parcel = await ParcelServices.approveParcelByReceiver(
+      parcelId,
+      receiverIdentifier
+    );
     sendResponse(res, {
       success: true,
       statusCode: httpStatus.OK,
@@ -223,10 +251,17 @@ const guestCancelParcel = catchAsync(
     const parcelId = req.params.id;
     const { phone, note } = req.body;
     if (!phone) {
-      throw new AppError(httpStatus.BAD_REQUEST, "Receiver phone number is required!");
+      throw new AppError(
+        httpStatus.BAD_REQUEST,
+        "Receiver phone number is required!"
+      );
     }
     const receiverIdentifier = { phone };
-    const parcel = await ParcelServices.cancelParcelByReceiver(parcelId, receiverIdentifier, note);
+    const parcel = await ParcelServices.cancelParcelByReceiver(
+      parcelId,
+      receiverIdentifier,
+      note
+    );
     sendResponse(res, {
       success: true,
       statusCode: httpStatus.OK,

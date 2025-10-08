@@ -39,7 +39,7 @@ const seedAdmin = () => __awaiter(void 0, void 0, void 0, function* () {
             auths: [authProvider],
         };
         yield user_model_1.default.create(payload);
-        console.log("Super admin created successfully!✅ \n");
+        console.log("Automatic admin created!✅ \n");
         // console.log(admin);
     }
     catch (err) {

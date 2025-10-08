@@ -33,7 +33,7 @@ export const seedAdmin = async () => {
     };
 
     await User.create(payload);
-    console.log("Super admin created successfully!✅ \n");
+    console.log("Automatic admin created!✅ \n");
     // console.log(admin);
   } catch (err) {
     console.log(err);

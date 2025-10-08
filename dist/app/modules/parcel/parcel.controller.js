@@ -56,10 +56,11 @@ const getParcelById = (0, catchAsync_1.catchAsync)((req, res, next) => __awaiter
         data: parcel,
     });
 }));
-// GET PARCEL BY TRACKING ID
+// GET PARCEL BY TRACKING ID - Guest only (no auth required but checks for authenticated users)
 const getParcelByTrackingId = (0, catchAsync_1.catchAsync)((req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
     const { trackingId } = req.params;
-    const parcel = yield parcel_service_1.ParcelServices.getParcelByTrackingId(trackingId);
+    const isAuthenticated = !!req.user; // Check if user is authenticated
+    const parcel = yield parcel_service_1.ParcelServices.getParcelByTrackingId(trackingId, isAuthenticated);
     (0, sendResponse_1.sendResponse)(res, {
         success: true,
         statusCode: http_status_codes_1.default.OK,
@@ -71,9 +72,17 @@ const getParcelByTrackingId = (0, catchAsync_1.catchAsync)((req, res, next) => _
 const getParcelByTrackingIdAndPhone = (0, catchAsync_1.catchAsync)((req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
     const { trackingId } = req.params;
     const { phone } = req.body;
+    console.log(trackingId, phone);
     if (!phone) {
         throw new AppError_1.default(http_status_codes_1.default.BAD_REQUEST, "Receiver phone number is required!");
     }
+    const parcel = yield parcel_service_1.ParcelServices.getParcelByTrackingIdAndPhone(trackingId, phone);
+    (0, sendResponse_1.sendResponse)(res, {
+        success: true,
+        statusCode: http_status_codes_1.default.OK,
+        message: "Parcel retrieved successfully✅",
+        data: parcel,
+    });
 }));
 // GET INCOMING PARCELS BY RECEIVER PHONE (for guest receivers)
 const getIncomingParcelsByPhone = (0, catchAsync_1.catchAsync)((req, res, next) => __awaiter(void 0, void 0, void 0, function* () {

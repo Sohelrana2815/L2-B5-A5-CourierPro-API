@@ -8,6 +8,6 @@ export const handleDuplicateError = (err: any): TGenericErrorResponse => {
   const duplicateKey = Object.keys(err.keyValue);
   return {
     statusCode: 409, // Conflict
-    message: `${err.keyValue[duplicateKey[0]]} already exists`,
+    message: `User${err.keyValue[duplicateKey[0]]} already exists`,
   };
 };

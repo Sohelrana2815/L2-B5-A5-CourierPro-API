@@ -5,6 +5,7 @@ import Parcel from "./parcel.model";
 import { Types } from "mongoose";
 import { calculateFee } from "../../utils/fee-calculator";
 import { handleValidateReceiverInfo } from "../../helpers/handleValidateReceiverInfo";
+import User from "../user/user.model";
 
 // CREATE PARCEL (Sender Role)
 const createParcel = async (
@@ -82,40 +83,77 @@ const getParcelById = async (parcelId: string, userId: string) => {
   return parcel;
 };
 
-// GET PARCEL BY TRACKING ID
-const getParcelByTrackingId = async (trackingId: string) => {
+// GET PARCEL BY TRACKING ID - Guest only
+const getParcelByTrackingId = async (
+  trackingId: string,
+  isAuthenticated: boolean
+) => {
+  // If user is authenticated, throw error directing them to use authenticated routes
+  if (isAuthenticated) {
+    throw new AppError(
+      httpStatus.FORBIDDEN,
+      "This route is only for guest users. Please use your authenticated routes to view parcels."
+    );
+  }
+
   const parcel = await Parcel.findOne({ trackingId });
 
   if (!parcel) {
     throw new AppError(httpStatus.NOT_FOUND, "Parcel not found!");
   }
+
   return {
     parcel,
   };
 };
 
-// GET PARCEL BY TRACKING ID AND RECEIVER PHONE (for guest receivers)
+// GET PARCEL BY TRACKING ID AND RECEIVER PHONE (for guest receivers only)
 const getParcelByTrackingIdAndPhone = async (
   trackingId: string,
   receiverPhone: string
 ) => {
+  // Check if the phone belongs to a registered receiver
+  const registeredReceiver = await User.findOne({
+    phone: receiverPhone,
+    role: "RECEIVER",
+    isDeleted: { $ne: true },
+    accountStatus: { $ne: "BLOCKED" },
+  });
+  if (registeredReceiver) {
+    throw new AppError(
+      httpStatus.FORBIDDEN,
+      "This route is only for guest receivers. Registered receivers should log in to view their parcels."
+    );
+  }
   const parcel = await Parcel.findOne({
     trackingId,
     "receiverInfo.phone": receiverPhone,
   });
-
   if (!parcel) {
     throw new AppError(
       httpStatus.NOT_FOUND,
       "Parcel not found or phone number doesn't match!"
     );
   }
-
   return parcel;
 };
 
 // GET INCOMING PARCELS BY RECEIVER PHONE (for guest receivers)
 const getIncomingParcelsByPhone = async (receiverPhone: string) => {
+  // Check if the phone belongs to a registered receiver
+  const registeredReceiver = await User.findOne({
+    phone: receiverPhone,
+    role: "RECEIVER",
+    isDeleted: { $ne: true },
+    accountStatus: { $ne: "BLOCKED" },
+  });
+  if (registeredReceiver) {
+    throw new AppError(
+      httpStatus.FORBIDDEN,
+      "This route is only for guest receivers. Registered receivers should log in to view their parcels."
+    );
+  }
+
   const parcels = await Parcel.find({
     "receiverInfo.phone": receiverPhone,
     currentStatus: {

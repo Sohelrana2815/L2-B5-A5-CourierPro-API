@@ -51,10 +51,16 @@ export const createUserZodSchema = z.object({
     .min(2, { error: "City name must be at least 2 characters" })
     .max(50, { error: "City name cannot exceed 50 characters" })
     .optional(),
+
+
+    
   // Role - Required for registration, only SENDER or RECEIVER allowed
   role: z.enum([Role.SENDER, Role.RECEIVER], {
     message: "Role must be either SENDER or RECEIVER",
   }),
+
+
+
 }).refine((data) => {
   // If role is RECEIVER, phone, address, and city are required
   if (data.role === Role.RECEIVER) {

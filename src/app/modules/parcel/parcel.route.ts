@@ -2,6 +2,7 @@ import { Router } from "express";
 import { ParcelControllers } from "./parcel.controller";
 import { validateRequest } from "../../middlewares/validateRequest";
 import { checkAuth } from "../../middlewares/checkAuth";
+import { guestOnly } from "../../middlewares/guestOnly";
 import { Role } from "../user/user.interface";
 import {
   createParcelZodSchema,
@@ -29,11 +30,11 @@ router.post(
   ParcelControllers.createParcel
 );
 
-// GET ALL PARCELS BY SENDER - Sender only
+// GET MY PARCELS - Registered receiver only
 router.get(
   "/my-parcels",
-  checkAuth(Role.SENDER, "Only SENDER can view their own parcels"),
-  ParcelControllers.getParcelsBySender
+  checkAuth(Role.RECEIVER, "Only Registered RECEIVER'S can view this route"),
+  ParcelControllers.getIncomingParcelsByReceiverId
 );
 
 // CANCEL PARCEL - Sender only
@@ -51,8 +52,12 @@ router.get(
   ParcelControllers.getParcelById
 );
 
-// GET PARCEL BY TRACKING ID - Public route (anyone can track)
-router.get("/track/:trackingId", ParcelControllers.getParcelByTrackingId);
+// GET PARCEL BY TRACKING ID - Guest only (no auth required but checks for authenticated users)
+router.get(
+  "/track/:trackingId",
+  guestOnly,
+  ParcelControllers.getParcelByTrackingId
+);
 
 // GET PARCEL BY TRACKING ID AND PHONE - For guest receivers (no auth required)
 router.post(

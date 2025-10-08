@@ -20,6 +20,7 @@ const parcel_model_1 = __importDefault(require("./parcel.model"));
 const mongoose_1 = require("mongoose");
 const fee_calculator_1 = require("../../utils/fee-calculator");
 const handleValidateReceiverInfo_1 = require("../../helpers/handleValidateReceiverInfo");
+const user_model_1 = __importDefault(require("../user/user.model"));
 // CREATE PARCEL (Sender Role)
 const createParcel = (senderId, payload) => __awaiter(void 0, void 0, void 0, function* () {
     const { receiverInfo, parcelDetails, expectedDeliveryDate } = payload;
@@ -74,8 +75,12 @@ const getParcelById = (parcelId, userId) => __awaiter(void 0, void 0, void 0, fu
     }
     return parcel;
 });
-// GET PARCEL BY TRACKING ID
-const getParcelByTrackingId = (trackingId) => __awaiter(void 0, void 0, void 0, function* () {
+// GET PARCEL BY TRACKING ID - Guest only
+const getParcelByTrackingId = (trackingId, isAuthenticated) => __awaiter(void 0, void 0, void 0, function* () {
+    // If user is authenticated, throw error directing them to use authenticated routes
+    if (isAuthenticated) {
+        throw new AppError_1.default(http_status_codes_1.default.FORBIDDEN, "This route is only for guest users. Please use your authenticated routes to view parcels.");
+    }
     const parcel = yield parcel_model_1.default.findOne({ trackingId });
     if (!parcel) {
         throw new AppError_1.default(http_status_codes_1.default.NOT_FOUND, "Parcel not found!");
@@ -84,8 +89,18 @@ const getParcelByTrackingId = (trackingId) => __awaiter(void 0, void 0, void 0, 
         parcel,
     };
 });
-// GET PARCEL BY TRACKING ID AND RECEIVER PHONE (for guest receivers)
+// GET PARCEL BY TRACKING ID AND RECEIVER PHONE (for guest receivers only)
 const getParcelByTrackingIdAndPhone = (trackingId, receiverPhone) => __awaiter(void 0, void 0, void 0, function* () {
+    // Check if the phone belongs to a registered receiver
+    const registeredReceiver = yield user_model_1.default.findOne({
+        phone: receiverPhone,
+        role: "RECEIVER",
+        isDeleted: { $ne: true },
+        accountStatus: { $ne: "BLOCKED" },
+    });
+    if (registeredReceiver) {
+        throw new AppError_1.default(http_status_codes_1.default.FORBIDDEN, "This route is only for guest receivers. Registered receivers should log in to view their parcels.");
+    }
     const parcel = yield parcel_model_1.default.findOne({
         trackingId,
         "receiverInfo.phone": receiverPhone,
@@ -97,6 +112,16 @@ const getParcelByTrackingIdAndPhone = (trackingId, receiverPhone) => __awaiter(v
 });
 // GET INCOMING PARCELS BY RECEIVER PHONE (for guest receivers)
 const getIncomingParcelsByPhone = (receiverPhone) => __awaiter(void 0, void 0, void 0, function* () {
+    // Check if the phone belongs to a registered receiver
+    const registeredReceiver = yield user_model_1.default.findOne({
+        phone: receiverPhone,
+        role: "RECEIVER",
+        isDeleted: { $ne: true },
+        accountStatus: { $ne: "BLOCKED" },
+    });
+    if (registeredReceiver) {
+        throw new AppError_1.default(http_status_codes_1.default.FORBIDDEN, "This route is only for guest receivers. Registered receivers should log in to view their parcels.");
+    }
     const parcels = yield parcel_model_1.default.find({
         "receiverInfo.phone": receiverPhone,
         currentStatus: {
