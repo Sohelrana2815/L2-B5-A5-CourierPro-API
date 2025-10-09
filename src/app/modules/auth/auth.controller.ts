@@ -139,7 +139,6 @@ const googleCallbackController = catchAsync(
       redirectTo = redirectTo.slice(1);
     }
 
-    // /booking => booking , => "/" => ""
     const user = req.user;
 
     if (!user) {

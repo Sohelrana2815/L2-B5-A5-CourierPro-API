@@ -8,7 +8,9 @@ const validateRequest_1 = require("../../middlewares/validateRequest");
 const checkAuth_1 = require("../../middlewares/checkAuth");
 const user_interface_1 = require("./user.interface");
 const router = (0, express_1.Router)();
+// CREATE USER
 router.post("/register", (0, validateRequest_1.validateRequest)(user_validation_1.createUserZodSchema), user_controller_1.UserControllers.createUser);
+// GET ALL USERS
 router.get("/all-users", (0, checkAuth_1.checkAuth)(user_interface_1.Role.ADMIN, "Only ADMIN can view all users"), user_controller_1.UserControllers.getAllUsers);
 // ADMIN: Bulk soft delete users (placed before parameterized routes to avoid route collision)
 router.patch("/bulk-soft-delete", (0, validateRequest_1.validateRequest)(user_validation_1.bulkSoftDeleteUsersZodSchema), (0, checkAuth_1.checkAuth)(user_interface_1.Role.ADMIN, "Only ADMIN can bulk soft delete users"), user_controller_1.UserControllers.bulkSoftDeleteUsers);

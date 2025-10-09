@@ -129,7 +129,6 @@ const googleCallbackController = (0, catchAsync_1.catchAsync)((req, res, next) =
     if (redirectTo.startsWith("/")) {
         redirectTo = redirectTo.slice(1);
     }
-    // /booking => booking , => "/" => ""
     const user = req.user;
     if (!user) {
         throw new AppError_1.default(http_status_codes_1.default.NOT_FOUND, "User Not Found");

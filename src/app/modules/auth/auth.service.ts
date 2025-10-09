@@ -15,6 +15,8 @@ const getNewAccessToken = async (refreshToken: string) => {
     accessToken: newAccessToken,
   };
 };
+
+
 const resetPassword = async (
   decodedToken: JwtPayload,
   oldPassword: string,

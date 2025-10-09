@@ -17,7 +17,7 @@ export const checkAuth =
       const accessToken = req.cookies?.accessToken || req.headers.authorization;
 
       if (!accessToken) {
-        throw new AppError(httpStatus.BAD_REQUEST, "No Token received.");
+        throw new AppError(httpStatus.UNAUTHORIZED, "You are not authorized!");
       }
 
       const verifiedToken = verifyToken(

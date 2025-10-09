@@ -11,13 +11,13 @@ import { checkAuth } from "../../middlewares/checkAuth";
 import { Role } from "./user.interface";
 
 const router = Router();
-
+// CREATE USER
 router.post(
   "/register",
   validateRequest(createUserZodSchema),
   UserControllers.createUser
 );
-
+// GET ALL USERS
 router.get(
   "/all-users",
   checkAuth(Role.ADMIN, "Only ADMIN can view all users"),

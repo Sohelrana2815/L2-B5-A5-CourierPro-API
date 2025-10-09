@@ -27,7 +27,7 @@ const checkAuth = (authRoles, customErrorMessage) => (req, res, next) => __await
         // Check both cookie and Authorization header
         const accessToken = ((_a = req.cookies) === null || _a === void 0 ? void 0 : _a.accessToken) || req.headers.authorization;
         if (!accessToken) {
-            throw new AppError_1.default(http_status_codes_1.default.BAD_REQUEST, "No Token received.");
+            throw new AppError_1.default(http_status_codes_1.default.UNAUTHORIZED, "You are not authorized!");
         }
         const verifiedToken = (0, jwt_1.verifyToken)(accessToken, env_1.envVars.JWT_ACCESS_SECRET);
         if (!verifiedToken) {
