@@ -13,6 +13,8 @@ const router = (0, express_1.Router)();
 router.get("/admin/all", (0, checkAuth_1.checkAuth)(user_interface_1.Role.ADMIN, "Only ADMIN can view all parcels"), parcel_controller_1.ParcelControllers.getAllParcels);
 // CREATE PARCEL - Sender only
 router.post("/create", (0, checkAuth_1.checkAuth)(user_interface_1.Role.SENDER, "Only SENDER can create a parcel"), (0, validateRequest_1.validateRequest)(parcel_validation_1.createParcelZodSchema), parcel_controller_1.ParcelControllers.createParcel);
+// GET MY PARCELS - Sender only (get all parcels created by the sender)
+router.get("/sender/my-parcels", (0, checkAuth_1.checkAuth)(user_interface_1.Role.SENDER, "Only SENDER can view their own parcels"), parcel_controller_1.ParcelControllers.getParcelsBySender);
 // GET MY PARCELS - Registered receiver only
 router.get("/my-parcels", (0, checkAuth_1.checkAuth)(user_interface_1.Role.RECEIVER, "Only Registered RECEIVERS can view this route"), parcel_controller_1.ParcelControllers.getIncomingParcelsByReceiverId);
 // CANCEL PARCEL - Sender only
@@ -32,6 +34,8 @@ router.patch("/receiver/:id/approve", (0, checkAuth_1.checkAuth)(user_interface_
 router.patch("/receiver/:id/cancel", (0, checkAuth_1.checkAuth)(user_interface_1.Role.RECEIVER, "Only RECEIVER can cancel parcels"), (0, validateRequest_1.validateRequest)(parcel_validation_1.cancelParcelByReceiverZodSchema), parcel_controller_1.ParcelControllers.cancelParcelByReceiver);
 // GUEST APPROVE PARCEL - No auth required
 router.patch("/guest/:id/approve", (0, validateRequest_1.validateRequest)(parcel_validation_1.approveParcelByReceiverZodSchema), parcel_controller_1.ParcelControllers.guestApproveParcel);
+// GUEST CANCEL PARCEL - No auth required
+router.patch("/guest/:id/cancel", (0, validateRequest_1.validateRequest)(parcel_validation_1.cancelParcelByReceiverZodSchema), parcel_controller_1.ParcelControllers.guestCancelParcel);
 // BLOCK PARCEL - Admin only
 router.patch("/admin/:id/block", (0, checkAuth_1.checkAuth)(user_interface_1.Role.ADMIN, "Only ADMIN can block parcels"), (0, validateRequest_1.validateRequest)(parcel_validation_1.blockUnblockParcelZodSchema), parcel_controller_1.ParcelControllers.blockParcel);
 // UNBLOCK PARCEL - Admin only

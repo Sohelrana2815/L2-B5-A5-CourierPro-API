@@ -10,6 +10,8 @@ const user_interface_1 = require("./user.interface");
 const router = (0, express_1.Router)();
 router.post("/register", (0, validateRequest_1.validateRequest)(user_validation_1.createUserZodSchema), user_controller_1.UserControllers.createUser);
 router.get("/all-users", (0, checkAuth_1.checkAuth)(user_interface_1.Role.ADMIN, "Only ADMIN can view all users"), user_controller_1.UserControllers.getAllUsers);
+// ADMIN: Bulk soft delete users (placed before parameterized routes to avoid route collision)
+router.patch("/bulk-soft-delete", (0, validateRequest_1.validateRequest)(user_validation_1.bulkSoftDeleteUsersZodSchema), (0, checkAuth_1.checkAuth)(user_interface_1.Role.ADMIN, "Only ADMIN can bulk soft delete users"), user_controller_1.UserControllers.bulkSoftDeleteUsers);
 router.patch("/:id", (0, validateRequest_1.validateRequest)(user_validation_1.updateUserZodSchema), (0, checkAuth_1.checkAuth)(user_interface_1.Role.ADMIN, "Only ADMIN can make other user ADMIN"), user_controller_1.UserControllers.updateUser);
 // ADMIN: Block user
 router.patch("/:id/block", (0, checkAuth_1.checkAuth)(user_interface_1.Role.ADMIN, "Only ADMIN can block users"), user_controller_1.UserControllers.blockUser);
@@ -22,5 +24,5 @@ router.patch("/:id/restore", (0, checkAuth_1.checkAuth)(user_interface_1.Role.AD
 // ADMIN: Promote user to admin
 router.patch("/:id/promote-to-admin", (0, checkAuth_1.checkAuth)(user_interface_1.Role.ADMIN, "Only ADMIN can promote users to admin"), user_controller_1.UserControllers.promoteUserToAdmin);
 // ADMIN: Bulk soft delete users
-router.patch("/bulk-soft-delete", (0, checkAuth_1.checkAuth)(user_interface_1.Role.ADMIN, "Only ADMIN can bulk soft delete users"), user_controller_1.UserControllers.bulkSoftDeleteUsers);
+// ...bulk-soft-delete route moved above to avoid matching by the ":id" route
 exports.UserRoutes = router;

@@ -3,10 +3,11 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.updateUserZodSchema = exports.createUserZodSchema = void 0;
+exports.bulkSoftDeleteUsersZodSchema = exports.updateUserZodSchema = exports.createUserZodSchema = void 0;
 const zod_1 = __importDefault(require("zod"));
 const user_interface_1 = require("./user.interface");
-exports.createUserZodSchema = zod_1.default.object({
+exports.createUserZodSchema = zod_1.default
+    .object({
     // Name
     name: zod_1.default
         .string({ error: "Name must be string and required!" })
@@ -57,7 +58,8 @@ exports.createUserZodSchema = zod_1.default.object({
     role: zod_1.default.enum([user_interface_1.Role.SENDER, user_interface_1.Role.RECEIVER], {
         message: "Role must be either SENDER or RECEIVER",
     }),
-}).refine((data) => {
+})
+    .refine((data) => {
     // If role is RECEIVER, phone, address, and city are required
     if (data.role === user_interface_1.Role.RECEIVER) {
         return data.phone && data.address && data.city;
@@ -107,8 +109,11 @@ exports.updateUserZodSchema = zod_1.default.object({
         .optional(),
     // Role
     role: zod_1.default.enum(Object.values(user_interface_1.Role)).optional(),
-    // Is Active
-    accountStatus: zod_1.default.enum(Object.values(user_interface_1.IsActive)).optional(),
     // Is verified
     isVerified: zod_1.default.boolean({ error: "isVerified must be boolean" }).optional(),
+});
+exports.bulkSoftDeleteUsersZodSchema = zod_1.default.object({
+    userIds: zod_1.default
+        .array(zod_1.default.string({ error: "Each user ID must be a string" }))
+        .min(1, { error: "At least one user ID is required" }),
 });

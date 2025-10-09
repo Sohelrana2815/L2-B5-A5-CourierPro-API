@@ -114,7 +114,10 @@ const bulkSoftDeleteUsers = catchAsync(
     const { userIds } = req.body;
 
     if (!userIds || !Array.isArray(userIds) || userIds.length === 0) {
-      throw new AppError(httpStatus.BAD_REQUEST, "userIds array is required and must not be empty!");
+      throw new AppError(
+        httpStatus.BAD_REQUEST,
+        "userIds array is required and must not be empty!"
+      );
     }
 
     const result = await UserServices.bulkSoftDeleteUsers(userIds);
@@ -133,7 +136,10 @@ const promoteUserToAdmin = catchAsync(
     const userId = req.params.id;
     const adminUser = req.user as JwtPayload;
 
-    const result = await UserServices.promoteUserToAdmin(userId, adminUser.userId);
+    const result = await UserServices.promoteUserToAdmin(
+      userId,
+      adminUser.userId
+    );
 
     sendResponse(res, {
       success: true,

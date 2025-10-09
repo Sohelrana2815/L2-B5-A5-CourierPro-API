@@ -1,6 +1,10 @@
 import { Router } from "express";
 import { UserControllers } from "./user.controller";
-import { createUserZodSchema, updateUserZodSchema } from "./user.validation";
+import {
+  createUserZodSchema,
+  updateUserZodSchema,
+  bulkSoftDeleteUsersZodSchema,
+} from "./user.validation";
 
 import { validateRequest } from "../../middlewares/validateRequest";
 import { checkAuth } from "../../middlewares/checkAuth";
@@ -18,6 +22,14 @@ router.get(
   "/all-users",
   checkAuth(Role.ADMIN, "Only ADMIN can view all users"),
   UserControllers.getAllUsers
+);
+
+// ADMIN: Bulk soft delete users (placed before parameterized routes to avoid route collision)
+router.patch(
+  "/bulk-soft-delete",
+  validateRequest(bulkSoftDeleteUsersZodSchema),
+  checkAuth(Role.ADMIN, "Only ADMIN can bulk soft delete users"),
+  UserControllers.bulkSoftDeleteUsers
 );
 
 router.patch(
@@ -63,10 +75,6 @@ router.patch(
 );
 
 // ADMIN: Bulk soft delete users
-router.patch(
-  "/bulk-soft-delete",
-  checkAuth(Role.ADMIN, "Only ADMIN can bulk soft delete users"),
-  UserControllers.bulkSoftDeleteUsers
-);
+// ...bulk-soft-delete route moved above to avoid matching by the ":id" route
 
 export const UserRoutes = router;

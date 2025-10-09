@@ -31,6 +31,13 @@ router.post(
   ParcelControllers.createParcel
 );
 
+// GET MY PARCELS - Sender only (get all parcels created by the sender)
+router.get(
+  "/sender/my-parcels",
+  checkAuth(Role.SENDER, "Only SENDER can view their own parcels"),
+  ParcelControllers.getParcelsBySender
+);
+
 // GET MY PARCELS - Registered receiver only
 router.get(
   "/my-parcels",
@@ -97,6 +104,14 @@ router.patch(
   "/guest/:id/approve",
   validateRequest(approveParcelByReceiverZodSchema),
   ParcelControllers.guestApproveParcel
+);
+
+// GUEST CANCEL PARCEL - No auth required
+
+router.patch(
+  "/guest/:id/cancel",
+  validateRequest(cancelParcelByReceiverZodSchema),
+  ParcelControllers.guestCancelParcel
 );
 
 // BLOCK PARCEL - Admin only
