@@ -223,6 +223,76 @@ const unblockParcel = (0, catchAsync_1.catchAsync)((req, res, next) => __awaiter
         data: parcel,
     });
 }));
+// PICK UP PARCEL (Admin Role) - APPROVED → PICKED_UP
+const pickUpParcel = (0, catchAsync_1.catchAsync)((req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
+    const parcelId = req.params.id;
+    const user = req.user;
+    const adminId = user.userId;
+    const { note } = req.body;
+    const parcel = yield parcel_service_1.ParcelServices.pickUpParcel(parcelId, adminId, note);
+    (0, sendResponse_1.sendResponse)(res, {
+        success: true,
+        statusCode: http_status_codes_1.default.OK,
+        message: "Parcel picked up successfully✅",
+        data: parcel,
+    });
+}));
+// START TRANSIT (Admin Role) - PICKED_UP → IN_TRANSIT
+const startTransit = (0, catchAsync_1.catchAsync)((req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
+    const parcelId = req.params.id;
+    const user = req.user;
+    const adminId = user.userId;
+    const { note } = req.body;
+    const parcel = yield parcel_service_1.ParcelServices.startTransit(parcelId, adminId, note);
+    (0, sendResponse_1.sendResponse)(res, {
+        success: true,
+        statusCode: http_status_codes_1.default.OK,
+        message: "Parcel transit started successfully✅",
+        data: parcel,
+    });
+}));
+// DELIVER PARCEL (Admin Role) - IN_TRANSIT → DELIVERED
+const deliverParcel = (0, catchAsync_1.catchAsync)((req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
+    const parcelId = req.params.id;
+    const user = req.user;
+    const adminId = user.userId;
+    const { note } = req.body;
+    const parcel = yield parcel_service_1.ParcelServices.deliverParcel(parcelId, adminId, note);
+    (0, sendResponse_1.sendResponse)(res, {
+        success: true,
+        statusCode: http_status_codes_1.default.OK,
+        message: "Parcel delivered successfully✅",
+        data: parcel,
+    });
+}));
+// RETURN PARCEL (Admin Role)
+const returnParcel = (0, catchAsync_1.catchAsync)((req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
+    const parcelId = req.params.id;
+    const user = req.user;
+    const adminId = user.userId;
+    const { note } = req.body;
+    const parcel = yield parcel_service_1.ParcelServices.returnParcel(parcelId, adminId, note);
+    (0, sendResponse_1.sendResponse)(res, {
+        success: true,
+        statusCode: http_status_codes_1.default.OK,
+        message: "Parcel returned successfully✅",
+        data: parcel,
+    });
+}));
+// HOLD PARCEL (Admin Role)
+const holdParcel = (0, catchAsync_1.catchAsync)((req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
+    const parcelId = req.params.id;
+    const user = req.user;
+    const adminId = user.userId;
+    const { note } = req.body;
+    const parcel = yield parcel_service_1.ParcelServices.holdParcel(parcelId, adminId, note);
+    (0, sendResponse_1.sendResponse)(res, {
+        success: true,
+        statusCode: http_status_codes_1.default.OK,
+        message: "Parcel put on hold successfully✅",
+        data: parcel,
+    });
+}));
 exports.ParcelControllers = {
     createParcel,
     getParcelsBySender,
@@ -239,4 +309,9 @@ exports.ParcelControllers = {
     guestCancelParcel,
     blockParcel,
     unblockParcel,
+    pickUpParcel,
+    startTransit,
+    deliverParcel,
+    returnParcel,
+    holdParcel,
 };

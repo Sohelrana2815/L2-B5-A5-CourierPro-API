@@ -20,7 +20,7 @@ const userSchema = new mongoose_1.Schema({
         lowercase: true,
         trim: true,
     },
-    password: { type: String },
+    password: { type: String, select: false, trim: true },
     phone: { type: String, trim: true },
     address: { type: String, trim: true },
     city: { type: String, trim: true },

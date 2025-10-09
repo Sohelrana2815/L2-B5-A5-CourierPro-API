@@ -32,7 +32,7 @@ router.get("/google", (req, res, next) => __awaiter(void 0, void 0, void 0, func
     if (role !== user_interface_1.Role.SENDER && role !== user_interface_1.Role.RECEIVER) {
         return res.status(400).json({
             success: false,
-            message: "Invalid role. Must be SENDER or RECEIVER"
+            message: "Invalid role. Must be SENDER or RECEIVER",
         });
     }
     // Pass both redirect and role in state as JSON

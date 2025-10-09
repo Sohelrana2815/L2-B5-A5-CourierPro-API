@@ -36,4 +36,14 @@ router.patch("/guest/:id/approve", (0, validateRequest_1.validateRequest)(parcel
 router.patch("/admin/:id/block", (0, checkAuth_1.checkAuth)(user_interface_1.Role.ADMIN, "Only ADMIN can block parcels"), (0, validateRequest_1.validateRequest)(parcel_validation_1.blockUnblockParcelZodSchema), parcel_controller_1.ParcelControllers.blockParcel);
 // UNBLOCK PARCEL - Admin only
 router.patch("/admin/:id/unblock", (0, checkAuth_1.checkAuth)(user_interface_1.Role.ADMIN, "Only ADMIN can unblock parcels"), (0, validateRequest_1.validateRequest)(parcel_validation_1.blockUnblockParcelZodSchema), parcel_controller_1.ParcelControllers.unblockParcel);
+// PICK UP PARCEL - Admin only (APPROVED → PICKED_UP)
+router.patch("/admin/:id/pickup", (0, checkAuth_1.checkAuth)(user_interface_1.Role.ADMIN, "Only ADMIN can pick up parcels"), parcel_controller_1.ParcelControllers.pickUpParcel);
+// START TRANSIT - Admin only (PICKED_UP → IN_TRANSIT)
+router.patch("/admin/:id/start-transit", (0, checkAuth_1.checkAuth)(user_interface_1.Role.ADMIN, "Only ADMIN can start parcel transit"), parcel_controller_1.ParcelControllers.startTransit);
+// DELIVER PARCEL - Admin only (IN_TRANSIT → DELIVERED)
+router.patch("/admin/:id/deliver", (0, checkAuth_1.checkAuth)(user_interface_1.Role.ADMIN, "Only ADMIN can deliver parcels"), parcel_controller_1.ParcelControllers.deliverParcel);
+// RETURN PARCEL - Admin only
+router.patch("/admin/:id/return", (0, checkAuth_1.checkAuth)(user_interface_1.Role.ADMIN, "Only ADMIN can return parcels"), parcel_controller_1.ParcelControllers.returnParcel);
+// HOLD PARCEL - Admin only
+router.patch("/admin/:id/hold", (0, checkAuth_1.checkAuth)(user_interface_1.Role.ADMIN, "Only ADMIN can put parcels on hold"), parcel_controller_1.ParcelControllers.holdParcel);
 exports.ParcelRoutes = router;

@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { UserControllers } from "./user.controller";
-import { createUserZodSchema } from "./user.validation";
+import { createUserZodSchema, updateUserZodSchema } from "./user.validation";
 
 import { validateRequest } from "../../middlewares/validateRequest";
 import { checkAuth } from "../../middlewares/checkAuth";
@@ -15,11 +15,17 @@ router.post(
 );
 
 router.get(
-  "/all-users", 
-  checkAuth(Role.ADMIN, "Only ADMIN can view all users"), 
+  "/all-users",
+  checkAuth(Role.ADMIN, "Only ADMIN can view all users"),
   UserControllers.getAllUsers
 );
 
+router.patch(
+  "/:id",
+  validateRequest(updateUserZodSchema),
+  checkAuth(Role.ADMIN, "Only ADMIN can make other user ADMIN"),
+  UserControllers.updateUser
+);
 
 // ADMIN: Block user
 router.patch(
@@ -47,6 +53,20 @@ router.patch(
   "/:id/restore",
   checkAuth(Role.ADMIN, "Only ADMIN can restore users"),
   UserControllers.restoreUser
+);
+
+// ADMIN: Promote user to admin
+router.patch(
+  "/:id/promote-to-admin",
+  checkAuth(Role.ADMIN, "Only ADMIN can promote users to admin"),
+  UserControllers.promoteUserToAdmin
+);
+
+// ADMIN: Bulk soft delete users
+router.patch(
+  "/bulk-soft-delete",
+  checkAuth(Role.ADMIN, "Only ADMIN can bulk soft delete users"),
+  UserControllers.bulkSoftDeleteUsers
 );
 
 export const UserRoutes = router;

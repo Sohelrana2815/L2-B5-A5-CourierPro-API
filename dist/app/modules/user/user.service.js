@@ -24,6 +24,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.UserServices = void 0;
+/* eslint-disable @typescript-eslint/no-unused-vars */
 const AppError_1 = __importDefault(require("../../errorHelpers/AppError"));
 const user_interface_1 = require("./user.interface");
 const user_model_1 = __importDefault(require("./user.model"));
@@ -36,13 +37,15 @@ const createUser = (payload) => __awaiter(void 0, void 0, void 0, function* () {
     if (isUserExist) {
         throw new AppError_1.default(http_status_codes_1.default.CONFLICT, "User already exist!");
     }
-    const hashedPassword = yield bcryptjs_1.default.hash(password, 10);
+    const hashedPassword = yield bcryptjs_1.default.hash(password, Number(env_1.envVars.BCRYPT_SALT_ROUND) || 10);
     const authProvider = {
         provider: "credentials",
         providerId: email,
     };
     const user = yield user_model_1.default.create(Object.assign({ password: hashedPassword, email, auths: [authProvider] }, rest));
-    return user;
+    const createdObj = user.toObject();
+    const { password: _pwd } = createdObj, userWithoutPassword = __rest(createdObj, ["password"]);
+    return userWithoutPassword;
 });
 const updateUser = (userId, payload, decodedToken) => __awaiter(void 0, void 0, void 0, function* () {
     const isUserExist = yield user_model_1.default.findById(userId);
@@ -50,21 +53,37 @@ const updateUser = (userId, payload, decodedToken) => __awaiter(void 0, void 0, 
         throw new AppError_1.default(http_status_codes_1.default.BAD_REQUEST, "User does not exist!");
     }
     if (payload.role) {
-        if (decodedToken.role === user_interface_1.Role.SENDER || decodedToken.role === user_interface_1.Role.RECEIVER) {
-            throw new AppError_1.default(http_status_codes_1.default.BAD_REQUEST, "You are not allowed to update role!");
+        // Only admins can update roles
+        if (decodedToken.role !== user_interface_1.Role.ADMIN) {
+            throw new AppError_1.default(http_status_codes_1.default.FORBIDDEN, "Only administrators can update user roles!");
+        }
+        // Additional validation for ADMIN role assignment
+        if (payload.role === user_interface_1.Role.ADMIN) {
+            // Check if the target user exists and is not already an admin
+            if (isUserExist.role === user_interface_1.Role.ADMIN) {
+                throw new AppError_1.default(http_status_codes_1.default.BAD_REQUEST, "User is already an administrator!");
+            }
+            // Optional: Add additional security checks here
+            // For example, require certain conditions to promote to admin
+            // or log the promotion for audit purposes
+        }
+        // Prevent users from demoting other admins (maintain admin privileges)
+        if (isUserExist.role === user_interface_1.Role.ADMIN && payload.role !== user_interface_1.Role.ADMIN) {
+            throw new AppError_1.default(http_status_codes_1.default.FORBIDDEN, "Cannot demote an existing administrator. Admin privileges can only be managed by system administrators.");
         }
     }
     if (payload.accountStatus || payload.isDeleted || payload.isVerified) {
-        if (decodedToken.role === user_interface_1.Role.SENDER || decodedToken.role === user_interface_1.Role.RECEIVER) {
+        if (decodedToken.role === user_interface_1.Role.SENDER ||
+            decodedToken.role === user_interface_1.Role.RECEIVER) {
             throw new AppError_1.default(http_status_codes_1.default.BAD_REQUEST, "You are not allowed to update status!");
         }
     }
     if (payload.password) {
-        payload.password = yield bcryptjs_1.default.hash(payload.password, env_1.envVars.BCRYPT_SALT_ROUND);
+        payload.password = yield bcryptjs_1.default.hash(payload.password, Number(env_1.envVars.BCRYPT_SALT_ROUND) || 10);
     }
     const newUpdatedUser = yield user_model_1.default.findByIdAndUpdate(userId, payload, {
         new: true,
-        runValidators: true
+        runValidators: true,
     });
     return newUpdatedUser;
 });
@@ -108,6 +127,40 @@ const restoreUser = (userId) => __awaiter(void 0, void 0, void 0, function* () {
     }
     return user;
 });
+// ADMIN: Bulk soft delete users
+const bulkSoftDeleteUsers = (userIds) => __awaiter(void 0, void 0, void 0, function* () {
+    const result = yield user_model_1.default.updateMany({ _id: { $in: userIds } }, { isDeleted: true });
+    if (result.matchedCount === 0) {
+        throw new AppError_1.default(http_status_codes_1.default.NOT_FOUND, "No users found to delete!");
+    }
+    return {
+        message: `${result.modifiedCount} users soft deleted successfully`,
+        deletedCount: result.modifiedCount,
+        matchedCount: result.matchedCount,
+    };
+});
+// ADMIN: Promote user to admin
+const promoteUserToAdmin = (userId, adminId) => __awaiter(void 0, void 0, void 0, function* () {
+    const targetUser = yield user_model_1.default.findById(userId);
+    if (!targetUser) {
+        throw new AppError_1.default(http_status_codes_1.default.NOT_FOUND, "Target user not found!");
+    }
+    if (targetUser.role === user_interface_1.Role.ADMIN) {
+        throw new AppError_1.default(http_status_codes_1.default.BAD_REQUEST, "User is already an administrator!");
+    }
+    if (targetUser.isDeleted) {
+        throw new AppError_1.default(http_status_codes_1.default.BAD_REQUEST, "Cannot promote a deleted user to administrator!");
+    }
+    if (targetUser.accountStatus === "BLOCKED") {
+        throw new AppError_1.default(http_status_codes_1.default.BAD_REQUEST, "Cannot promote a blocked user to administrator!");
+    }
+    // Update user role to ADMIN
+    const updatedUser = yield user_model_1.default.findByIdAndUpdate(userId, { role: user_interface_1.Role.ADMIN }, { new: true, runValidators: true });
+    return {
+        message: `User ${targetUser.name} has been successfully promoted to administrator`,
+        updatedUser,
+    };
+});
 exports.UserServices = {
     createUser,
     getAllUsers,
@@ -116,4 +169,6 @@ exports.UserServices = {
     unblockUser,
     softDeleteUser,
     restoreUser,
+    bulkSoftDeleteUsers,
+    promoteUserToAdmin,
 };

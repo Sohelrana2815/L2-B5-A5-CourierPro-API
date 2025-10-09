@@ -115,4 +115,39 @@ router.patch(
   ParcelControllers.unblockParcel
 );
 
+// PICK UP PARCEL - Admin only (APPROVED → PICKED_UP)
+router.patch(
+  "/admin/:id/pickup",
+  checkAuth(Role.ADMIN, "Only ADMIN can pick up parcels"),
+  ParcelControllers.pickUpParcel
+);
+
+// START TRANSIT - Admin only (PICKED_UP → IN_TRANSIT)
+router.patch(
+  "/admin/:id/start-transit",
+  checkAuth(Role.ADMIN, "Only ADMIN can start parcel transit"),
+  ParcelControllers.startTransit
+);
+
+// DELIVER PARCEL - Admin only (IN_TRANSIT → DELIVERED)
+router.patch(
+  "/admin/:id/deliver",
+  checkAuth(Role.ADMIN, "Only ADMIN can deliver parcels"),
+  ParcelControllers.deliverParcel
+);
+
+// RETURN PARCEL - Admin only
+router.patch(
+  "/admin/:id/return",
+  checkAuth(Role.ADMIN, "Only ADMIN can return parcels"),
+  ParcelControllers.returnParcel
+);
+
+// HOLD PARCEL - Admin only
+router.patch(
+  "/admin/:id/hold",
+  checkAuth(Role.ADMIN, "Only ADMIN can put parcels on hold"),
+  ParcelControllers.holdParcel
+);
+
 export const ParcelRoutes = router;

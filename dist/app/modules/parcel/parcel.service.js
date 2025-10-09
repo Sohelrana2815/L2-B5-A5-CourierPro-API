@@ -21,6 +21,35 @@ const mongoose_1 = require("mongoose");
 const fee_calculator_1 = require("../../utils/fee-calculator");
 const handleValidateReceiverInfo_1 = require("../../helpers/handleValidateReceiverInfo");
 const user_model_1 = __importDefault(require("../user/user.model"));
+// VALIDATE STATUS TRANSITION
+const validateStatusTransition = (currentStatus, newStatus, userRole) => {
+    // Define allowed transitions based on role and current status
+    const allowedTransitions = {
+        RECEIVER: {
+            [parcel_interface_1.ParcelStatus.REQUESTED]: [parcel_interface_1.ParcelStatus.APPROVED],
+            [parcel_interface_1.ParcelStatus.APPROVED]: [],
+            [parcel_interface_1.ParcelStatus.PICKED_UP]: [],
+            [parcel_interface_1.ParcelStatus.IN_TRANSIT]: [],
+            [parcel_interface_1.ParcelStatus.DELIVERED]: [],
+            [parcel_interface_1.ParcelStatus.CANCELLED]: [],
+            [parcel_interface_1.ParcelStatus.RETURNED]: [],
+            [parcel_interface_1.ParcelStatus.ON_HOLD]: [],
+        },
+        ADMIN: {
+            [parcel_interface_1.ParcelStatus.APPROVED]: [parcel_interface_1.ParcelStatus.PICKED_UP],
+            [parcel_interface_1.ParcelStatus.PICKED_UP]: [parcel_interface_1.ParcelStatus.IN_TRANSIT, parcel_interface_1.ParcelStatus.ON_HOLD, parcel_interface_1.ParcelStatus.RETURNED],
+            [parcel_interface_1.ParcelStatus.IN_TRANSIT]: [parcel_interface_1.ParcelStatus.DELIVERED, parcel_interface_1.ParcelStatus.ON_HOLD, parcel_interface_1.ParcelStatus.RETURNED],
+            [parcel_interface_1.ParcelStatus.DELIVERED]: [], // Final status - no further transitions
+            [parcel_interface_1.ParcelStatus.CANCELLED]: [], // Final status - no further transitions
+            [parcel_interface_1.ParcelStatus.RETURNED]: [], // Final status - no further transitions
+            [parcel_interface_1.ParcelStatus.ON_HOLD]: [parcel_interface_1.ParcelStatus.PICKED_UP, parcel_interface_1.ParcelStatus.IN_TRANSIT, parcel_interface_1.ParcelStatus.RETURNED],
+            [parcel_interface_1.ParcelStatus.REQUESTED]: [parcel_interface_1.ParcelStatus.APPROVED, parcel_interface_1.ParcelStatus.ON_HOLD, parcel_interface_1.ParcelStatus.CANCELLED],
+        },
+    };
+    const roleTransitions = allowedTransitions[userRole] || {};
+    const allowedNewStatuses = roleTransitions[currentStatus] || [];
+    return allowedNewStatuses.includes(newStatus);
+};
 // CREATE PARCEL (Sender Role)
 const createParcel = (senderId, payload) => __awaiter(void 0, void 0, void 0, function* () {
     const { receiverInfo, parcelDetails, expectedDeliveryDate } = payload;
@@ -370,6 +399,131 @@ const unblockParcel = (parcelId, adminId, note) => __awaiter(void 0, void 0, voi
     yield parcel.save();
     return parcel;
 });
+// PICK UP PARCEL (Admin Role) - APPROVED → PICKED_UP
+const pickUpParcel = (parcelId, adminId, note) => __awaiter(void 0, void 0, void 0, function* () {
+    // Find the parcel
+    const parcel = yield parcel_model_1.default.findById(parcelId);
+    if (!parcel) {
+        throw new AppError_1.default(http_status_codes_1.default.NOT_FOUND, "Parcel not found!");
+    }
+    // Validate status transition
+    if (!validateStatusTransition(parcel.currentStatus, parcel_interface_1.ParcelStatus.PICKED_UP, "ADMIN")) {
+        throw new AppError_1.default(http_status_codes_1.default.BAD_REQUEST, `Cannot pick up parcel with status: ${parcel.currentStatus}. Only parcels with APPROVED status can be picked up.`);
+    }
+    // Update the parcel status to PICKED_UP
+    parcel.currentStatus = parcel_interface_1.ParcelStatus.PICKED_UP;
+    // Add status log entry
+    const pickUpStatusLog = {
+        status: parcel_interface_1.ParcelStatus.PICKED_UP,
+        timestamp: new Date(),
+        updatedBy: new mongoose_1.Types.ObjectId(adminId),
+        note: note || "Parcel picked up by courier",
+    };
+    parcel.statusHistory.push(pickUpStatusLog);
+    // Save the updated parcel
+    yield parcel.save();
+    return parcel;
+});
+// START TRANSIT (Admin Role) - PICKED_UP → IN_TRANSIT
+const startTransit = (parcelId, adminId, note) => __awaiter(void 0, void 0, void 0, function* () {
+    // Find the parcel
+    const parcel = yield parcel_model_1.default.findById(parcelId);
+    if (!parcel) {
+        throw new AppError_1.default(http_status_codes_1.default.NOT_FOUND, "Parcel not found!");
+    }
+    // Validate status transition
+    if (!validateStatusTransition(parcel.currentStatus, parcel_interface_1.ParcelStatus.IN_TRANSIT, "ADMIN")) {
+        throw new AppError_1.default(http_status_codes_1.default.BAD_REQUEST, `Cannot start transit for parcel with status: ${parcel.currentStatus}. Only parcels with PICKED_UP status can start transit.`);
+    }
+    // Update the parcel status to IN_TRANSIT
+    parcel.currentStatus = parcel_interface_1.ParcelStatus.IN_TRANSIT;
+    // Add status log entry
+    const transitStatusLog = {
+        status: parcel_interface_1.ParcelStatus.IN_TRANSIT,
+        timestamp: new Date(),
+        updatedBy: new mongoose_1.Types.ObjectId(adminId),
+        note: note || "Parcel in transit to destination",
+    };
+    parcel.statusHistory.push(transitStatusLog);
+    // Save the updated parcel
+    yield parcel.save();
+    return parcel;
+});
+// DELIVER PARCEL (Admin Role) - IN_TRANSIT → DELIVERED
+const deliverParcel = (parcelId, adminId, note) => __awaiter(void 0, void 0, void 0, function* () {
+    // Find the parcel
+    const parcel = yield parcel_model_1.default.findById(parcelId);
+    if (!parcel) {
+        throw new AppError_1.default(http_status_codes_1.default.NOT_FOUND, "Parcel not found!");
+    }
+    // Validate status transition
+    if (!validateStatusTransition(parcel.currentStatus, parcel_interface_1.ParcelStatus.DELIVERED, "ADMIN")) {
+        throw new AppError_1.default(http_status_codes_1.default.BAD_REQUEST, `Cannot deliver parcel with status: ${parcel.currentStatus}. Only parcels with IN_TRANSIT status can be delivered.`);
+    }
+    // Update the parcel status to DELIVERED
+    parcel.currentStatus = parcel_interface_1.ParcelStatus.DELIVERED;
+    // Add status log entry
+    const deliverStatusLog = {
+        status: parcel_interface_1.ParcelStatus.DELIVERED,
+        timestamp: new Date(),
+        updatedBy: new mongoose_1.Types.ObjectId(adminId),
+        note: note || "Parcel delivered successfully",
+    };
+    parcel.statusHistory.push(deliverStatusLog);
+    // Save the updated parcel
+    yield parcel.save();
+    return parcel;
+});
+// RETURN PARCEL (Admin Role) - Can return from various statuses
+const returnParcel = (parcelId, adminId, note) => __awaiter(void 0, void 0, void 0, function* () {
+    // Find the parcel
+    const parcel = yield parcel_model_1.default.findById(parcelId);
+    if (!parcel) {
+        throw new AppError_1.default(http_status_codes_1.default.NOT_FOUND, "Parcel not found!");
+    }
+    // Validate status transition
+    if (!validateStatusTransition(parcel.currentStatus, parcel_interface_1.ParcelStatus.RETURNED, "ADMIN")) {
+        throw new AppError_1.default(http_status_codes_1.default.BAD_REQUEST, `Cannot return parcel with status: ${parcel.currentStatus}.`);
+    }
+    // Update the parcel status to RETURNED
+    parcel.currentStatus = parcel_interface_1.ParcelStatus.RETURNED;
+    // Add status log entry
+    const returnStatusLog = {
+        status: parcel_interface_1.ParcelStatus.RETURNED,
+        timestamp: new Date(),
+        updatedBy: new mongoose_1.Types.ObjectId(adminId),
+        note: note || "Parcel returned to sender",
+    };
+    parcel.statusHistory.push(returnStatusLog);
+    // Save the updated parcel
+    yield parcel.save();
+    return parcel;
+});
+// HOLD PARCEL (Admin Role) - Can put parcels on hold from various statuses
+const holdParcel = (parcelId, adminId, note) => __awaiter(void 0, void 0, void 0, function* () {
+    // Find the parcel
+    const parcel = yield parcel_model_1.default.findById(parcelId);
+    if (!parcel) {
+        throw new AppError_1.default(http_status_codes_1.default.NOT_FOUND, "Parcel not found!");
+    }
+    // Validate status transition
+    if (!validateStatusTransition(parcel.currentStatus, parcel_interface_1.ParcelStatus.ON_HOLD, "ADMIN")) {
+        throw new AppError_1.default(http_status_codes_1.default.BAD_REQUEST, `Cannot put parcel on hold with status: ${parcel.currentStatus}.`);
+    }
+    // Update the parcel status to ON_HOLD
+    parcel.currentStatus = parcel_interface_1.ParcelStatus.ON_HOLD;
+    // Add status log entry
+    const holdStatusLog = {
+        status: parcel_interface_1.ParcelStatus.ON_HOLD,
+        timestamp: new Date(),
+        updatedBy: new mongoose_1.Types.ObjectId(adminId),
+        note: note || "Parcel put on hold",
+    };
+    parcel.statusHistory.push(holdStatusLog);
+    // Save the updated parcel
+    yield parcel.save();
+    return parcel;
+});
 exports.ParcelServices = {
     createParcel,
     getParcelsBySender,
@@ -384,4 +538,9 @@ exports.ParcelServices = {
     cancelParcelByReceiver,
     blockParcel,
     unblockParcel,
+    pickUpParcel,
+    startTransit,
+    deliverParcel,
+    returnParcel,
+    holdParcel,
 };

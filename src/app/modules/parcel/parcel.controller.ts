@@ -311,6 +311,101 @@ const unblockParcel = catchAsync(
   }
 );
 
+// PICK UP PARCEL (Admin Role) - APPROVED → PICKED_UP
+const pickUpParcel = catchAsync(
+  async (req: Request, res: Response, next: NextFunction) => {
+    const parcelId = req.params.id;
+    const user = req.user as JwtPayload;
+    const adminId = user.userId;
+    const { note } = req.body;
+
+    const parcel = await ParcelServices.pickUpParcel(parcelId, adminId, note);
+
+    sendResponse(res, {
+      success: true,
+      statusCode: httpStatus.OK,
+      message: "Parcel picked up successfully✅",
+      data: parcel,
+    });
+  }
+);
+
+// START TRANSIT (Admin Role) - PICKED_UP → IN_TRANSIT
+const startTransit = catchAsync(
+  async (req: Request, res: Response, next: NextFunction) => {
+    const parcelId = req.params.id;
+    const user = req.user as JwtPayload;
+    const adminId = user.userId;
+    const { note } = req.body;
+
+    const parcel = await ParcelServices.startTransit(parcelId, adminId, note);
+
+    sendResponse(res, {
+      success: true,
+      statusCode: httpStatus.OK,
+      message: "Parcel transit started successfully✅",
+      data: parcel,
+    });
+  }
+);
+
+// DELIVER PARCEL (Admin Role) - IN_TRANSIT → DELIVERED
+const deliverParcel = catchAsync(
+  async (req: Request, res: Response, next: NextFunction) => {
+    const parcelId = req.params.id;
+    const user = req.user as JwtPayload;
+    const adminId = user.userId;
+    const { note } = req.body;
+
+    const parcel = await ParcelServices.deliverParcel(parcelId, adminId, note);
+
+    sendResponse(res, {
+      success: true,
+      statusCode: httpStatus.OK,
+      message: "Parcel delivered successfully✅",
+      data: parcel,
+    });
+  }
+);
+
+// RETURN PARCEL (Admin Role)
+const returnParcel = catchAsync(
+  async (req: Request, res: Response, next: NextFunction) => {
+    const parcelId = req.params.id;
+    const user = req.user as JwtPayload;
+    const adminId = user.userId;
+    const { note } = req.body;
+
+    const parcel = await ParcelServices.returnParcel(parcelId, adminId, note);
+
+    sendResponse(res, {
+      success: true,
+      statusCode: httpStatus.OK,
+      message: "Parcel returned successfully✅",
+      data: parcel,
+    });
+  }
+);
+
+// HOLD PARCEL (Admin Role)
+const holdParcel = catchAsync(
+  async (req: Request, res: Response, next: NextFunction) => {
+    const parcelId = req.params.id;
+    const user = req.user as JwtPayload;
+    const adminId = user.userId;
+    const { note } = req.body;
+
+    const parcel = await ParcelServices.holdParcel(parcelId, adminId, note);
+
+    sendResponse(res, {
+      success: true,
+      statusCode: httpStatus.OK,
+      message: "Parcel put on hold successfully✅",
+      data: parcel,
+    });
+  }
+);
+
 export const ParcelControllers = {
   createParcel,
   getParcelsBySender,
@@ -327,4 +422,9 @@ export const ParcelControllers = {
   guestCancelParcel,
   blockParcel,
   unblockParcel,
+  pickUpParcel,
+  startTransit,
+  deliverParcel,
+  returnParcel,
+  holdParcel,
 };

@@ -37,12 +37,21 @@ const credentialsLogin = (0, catchAsync_1.catchAsync)((req, res, next) => __awai
     // const loginInfo = await AuthServices.credentialsLogin(req.body);
     passport_1.default.authenticate("local", (err, user, info) => __awaiter(void 0, void 0, void 0, function* () {
         if (err) {
-            // return next(err);
-            // return new AppError(401, err);
-            return next(new AppError_1.default(401, err));
+            // Handle different types of errors from passport
+            let errorMessage = "Authentication failed";
+            if (typeof err === "string") {
+                errorMessage = err;
+            }
+            else if (err instanceof Error) {
+                errorMessage = err.message;
+            }
+            else if (err && typeof err === "object") {
+                errorMessage = err.message || "Authentication failed";
+            }
+            return next(new AppError_1.default(401, errorMessage));
         }
         if (!user) {
-            return next(new AppError_1.default(401, info.message));
+            return next(new AppError_1.default(401, (info === null || info === void 0 ? void 0 : info.message) || "Authentication failed"));
         }
         const userTokens = (0, userTokens_1.createUserTokens)(user);
         const _a = user.toObject(), { password: pass } = _a, rest = __rest(_a, ["password"]);

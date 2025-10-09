@@ -4,6 +4,7 @@ import httpStatus from "http-status-codes";
 import { UserServices } from "./user.service";
 import { catchAsync } from "../../utils/catchAsync";
 import { sendResponse } from "../../utils/sendResponse";
+import AppError from "../../errorHelpers/AppError";
 import { JwtPayload } from "jsonwebtoken";
 
 // ADMIN: Block user
@@ -107,6 +108,42 @@ const updateUser = catchAsync(
   }
 );
 
+// ADMIN: Bulk soft delete users
+const bulkSoftDeleteUsers = catchAsync(
+  async (req: Request, res: Response, next: NextFunction) => {
+    const { userIds } = req.body;
+
+    if (!userIds || !Array.isArray(userIds) || userIds.length === 0) {
+      throw new AppError(httpStatus.BAD_REQUEST, "userIds array is required and must not be empty!");
+    }
+
+    const result = await UserServices.bulkSoftDeleteUsers(userIds);
+    sendResponse(res, {
+      success: true,
+      statusCode: httpStatus.OK,
+      message: result.message,
+      data: result,
+    });
+  }
+);
+
+// ADMIN: Promote user to admin
+const promoteUserToAdmin = catchAsync(
+  async (req: Request, res: Response, next: NextFunction) => {
+    const userId = req.params.id;
+    const adminUser = req.user as JwtPayload;
+
+    const result = await UserServices.promoteUserToAdmin(userId, adminUser.userId);
+
+    sendResponse(res, {
+      success: true,
+      statusCode: httpStatus.OK,
+      message: result.message,
+      data: result.updatedUser,
+    });
+  }
+);
+
 export const UserControllers = {
   createUser,
   getAllUsers,
@@ -115,4 +152,6 @@ export const UserControllers = {
   unblockUser,
   softDeleteUser,
   restoreUser,
+  bulkSoftDeleteUsers,
+  promoteUserToAdmin,
 };

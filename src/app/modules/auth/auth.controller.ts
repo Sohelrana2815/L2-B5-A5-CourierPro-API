@@ -17,14 +17,24 @@ const credentialsLogin = catchAsync(
     // const loginInfo = await AuthServices.credentialsLogin(req.body);
     passport.authenticate("local", async (err: any, user: any, info: any) => {
       if (err) {
-        // return next(err);
-        // return new AppError(401, err);
+        // Handle different types of errors from passport
+        let errorMessage = "Authentication failed";
 
-        return next(new AppError(401, err));
+        if (typeof err === "string") {
+          errorMessage = err;
+        } else if (err instanceof Error) {
+          errorMessage = err.message;
+        } else if (err && typeof err === "object") {
+          errorMessage = err.message || "Authentication failed";
+        }
+
+        return next(new AppError(401, errorMessage));
       }
 
       if (!user) {
-        return next(new AppError(401, info.message));
+        return next(
+          new AppError(401, info?.message || "Authentication failed")
+        );
       }
       const userTokens = createUserTokens(user);
 

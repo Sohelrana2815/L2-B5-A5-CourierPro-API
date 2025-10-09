@@ -19,7 +19,7 @@ passport.use(
     },
     async (email: string, password: string, done) => {
       try {
-        const isUserExist = await User.findOne({ email });
+        const isUserExist = await User.findOne({ email }).select('+password');
 
         // if (!isUserExist) {
         //   return done(null, false, { message: "User does not exist" });
@@ -29,32 +29,36 @@ passport.use(
           return done("User does not exist");
         }
 
+        // Check if user has Google authentication but no password
         const isGoogleAuthenticated = isUserExist.auths.some(
           (providerObjects) => providerObjects.provider === "google"
         );
 
-        if (isGoogleAuthenticated) {
+        if (isGoogleAuthenticated && !isUserExist.password) {
           return done(null, false, {
             message:
               "You have already logged in with Google. So if you want to login with credentials, then first login with Google and set a password for your gmail account and then you can login with email and password.",
           });
         }
-        // if (isGoogleAuthenticated) {
-        //   done(
-        //     "User already logged in with Google. So if you want to login with credentials, then first login with Google and set a password for your gmail account and then you can login with email and password."
-        //   );
-        // }
 
-        const isPasswordMatched = await bcryptjs.compare(
-          password as string,
-          isUserExist.password as string
-        );
+        // If user has password, allow credential login regardless of Google auth
+        if (isUserExist.password) {
+          const isPasswordMatched = await bcryptjs.compare(
+            password as string,
+            isUserExist.password as string
+          );
 
-        if (!isPasswordMatched) {
-          done(null, false, { message: "Password does not match!" });
+          if (!isPasswordMatched) {
+            done(null, false, { message: "Password does not match!" });
+          }
+
+          return done(null, isUserExist);
         }
 
-        return done(null, isUserExist);
+        // If no password and no Google auth, this shouldn't happen but handle it
+        return done(null, false, {
+          message: "This account doesn't have a password set. Please contact administrator.",
+        });
       } catch (error) {
         console.log(error);
         done(error);
