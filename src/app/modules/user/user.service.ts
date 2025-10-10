@@ -32,10 +32,9 @@ const createUser = async (payload: Partial<IUser>) => {
     auths: [authProvider],
     ...rest,
   });
-  const createdObj = user.toObject();
-  const { password: _pwd, ...userWithoutPassword } = createdObj;
+  const userObj = user.toObject();
 
-  return userWithoutPassword;
+  return { name: userObj.name };
 };
 
 const updateUser = async (

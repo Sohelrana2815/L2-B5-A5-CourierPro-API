@@ -14,7 +14,10 @@ const validateStatusTransition = (
   userRole: string
 ): boolean => {
   // Define allowed transitions based on role and current status
-  const allowedTransitions: Record<string, Record<ParcelStatus, ParcelStatus[]>> = {
+  const allowedTransitions: Record<
+    string,
+    Record<ParcelStatus, ParcelStatus[]>
+  > = {
     RECEIVER: {
       [ParcelStatus.REQUESTED]: [ParcelStatus.APPROVED],
       [ParcelStatus.APPROVED]: [],
@@ -27,13 +30,29 @@ const validateStatusTransition = (
     },
     ADMIN: {
       [ParcelStatus.APPROVED]: [ParcelStatus.PICKED_UP],
-      [ParcelStatus.PICKED_UP]: [ParcelStatus.IN_TRANSIT, ParcelStatus.ON_HOLD, ParcelStatus.RETURNED],
-      [ParcelStatus.IN_TRANSIT]: [ParcelStatus.DELIVERED, ParcelStatus.ON_HOLD, ParcelStatus.RETURNED],
+      [ParcelStatus.PICKED_UP]: [
+        ParcelStatus.IN_TRANSIT,
+        ParcelStatus.ON_HOLD,
+        ParcelStatus.RETURNED,
+      ],
+      [ParcelStatus.IN_TRANSIT]: [
+        ParcelStatus.DELIVERED,
+        ParcelStatus.ON_HOLD,
+        ParcelStatus.RETURNED,
+      ],
       [ParcelStatus.DELIVERED]: [], // Final status - no further transitions
       [ParcelStatus.CANCELLED]: [], // Final status - no further transitions
       [ParcelStatus.RETURNED]: [], // Final status - no further transitions
-      [ParcelStatus.ON_HOLD]: [ParcelStatus.PICKED_UP, ParcelStatus.IN_TRANSIT, ParcelStatus.RETURNED],
-      [ParcelStatus.REQUESTED]: [ParcelStatus.APPROVED, ParcelStatus.ON_HOLD, ParcelStatus.CANCELLED],
+      [ParcelStatus.ON_HOLD]: [
+        ParcelStatus.PICKED_UP,
+        ParcelStatus.IN_TRANSIT,
+        ParcelStatus.RETURNED,
+      ],
+      [ParcelStatus.REQUESTED]: [
+        ParcelStatus.APPROVED,
+        ParcelStatus.ON_HOLD,
+        ParcelStatus.CANCELLED,
+      ],
     },
   };
 
@@ -138,8 +157,10 @@ const getParcelByTrackingId = async (
     throw new AppError(httpStatus.NOT_FOUND, "Parcel not found!");
   }
 
+  const parcelObject = parcel.toObject();
+
   return {
-    parcel,
+    statusHistory: parcelObject.statusHistory,
   };
 };
 
@@ -555,7 +576,13 @@ const pickUpParcel = async (
   }
 
   // Validate status transition
-  if (!validateStatusTransition(parcel.currentStatus, ParcelStatus.PICKED_UP, "ADMIN")) {
+  if (
+    !validateStatusTransition(
+      parcel.currentStatus,
+      ParcelStatus.PICKED_UP,
+      "ADMIN"
+    )
+  ) {
     throw new AppError(
       httpStatus.BAD_REQUEST,
       `Cannot pick up parcel with status: ${parcel.currentStatus}. Only parcels with APPROVED status can be picked up.`
@@ -595,7 +622,13 @@ const startTransit = async (
   }
 
   // Validate status transition
-  if (!validateStatusTransition(parcel.currentStatus, ParcelStatus.IN_TRANSIT, "ADMIN")) {
+  if (
+    !validateStatusTransition(
+      parcel.currentStatus,
+      ParcelStatus.IN_TRANSIT,
+      "ADMIN"
+    )
+  ) {
     throw new AppError(
       httpStatus.BAD_REQUEST,
       `Cannot start transit for parcel with status: ${parcel.currentStatus}. Only parcels with PICKED_UP status can start transit.`
@@ -635,7 +668,13 @@ const deliverParcel = async (
   }
 
   // Validate status transition
-  if (!validateStatusTransition(parcel.currentStatus, ParcelStatus.DELIVERED, "ADMIN")) {
+  if (
+    !validateStatusTransition(
+      parcel.currentStatus,
+      ParcelStatus.DELIVERED,
+      "ADMIN"
+    )
+  ) {
     throw new AppError(
       httpStatus.BAD_REQUEST,
       `Cannot deliver parcel with status: ${parcel.currentStatus}. Only parcels with IN_TRANSIT status can be delivered.`
@@ -675,7 +714,13 @@ const returnParcel = async (
   }
 
   // Validate status transition
-  if (!validateStatusTransition(parcel.currentStatus, ParcelStatus.RETURNED, "ADMIN")) {
+  if (
+    !validateStatusTransition(
+      parcel.currentStatus,
+      ParcelStatus.RETURNED,
+      "ADMIN"
+    )
+  ) {
     throw new AppError(
       httpStatus.BAD_REQUEST,
       `Cannot return parcel with status: ${parcel.currentStatus}.`
@@ -715,7 +760,13 @@ const holdParcel = async (
   }
 
   // Validate status transition
-  if (!validateStatusTransition(parcel.currentStatus, ParcelStatus.ON_HOLD, "ADMIN")) {
+  if (
+    !validateStatusTransition(
+      parcel.currentStatus,
+      ParcelStatus.ON_HOLD,
+      "ADMIN"
+    )
+  ) {
     throw new AppError(
       httpStatus.BAD_REQUEST,
       `Cannot put parcel on hold with status: ${parcel.currentStatus}.`
