@@ -38,7 +38,7 @@ const userSchema = new mongoose_1.Schema({
         index: true,
     },
     isVerified: { type: Boolean, default: false },
-    isDeleted: { type: Boolean, default: false, select: false },
+    isDeleted: { type: Boolean, default: false },
     auths: [authProviderSchema],
 }, {
     timestamps: true,

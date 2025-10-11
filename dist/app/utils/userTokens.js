@@ -35,7 +35,7 @@ const createUserTokens = (user) => {
 exports.createUserTokens = createUserTokens;
 const createNewAccessTokenWithRefreshToken = (refreshToken) => __awaiter(void 0, void 0, void 0, function* () {
     const verifiedRefreshToken = (0, jwt_1.verifyToken)(refreshToken, env_1.envVars.JWT_REFRESH_SECRET);
-    const isUserExist = yield user_model_1.default.findOne({ email: verifiedRefreshToken.email });
+    const isUserExist = yield user_model_1.default.findOne({ email: verifiedRefreshToken.email }).select("+isDeleted");
     if (!isUserExist) {
         throw new AppError_1.default(http_status_codes_1.default.BAD_REQUEST, "User does not exist!");
     }

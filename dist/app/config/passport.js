@@ -25,12 +25,16 @@ passport_1.default.use(new passport_local_1.Strategy({
     passwordField: "password",
 }, (email, password, done) => __awaiter(void 0, void 0, void 0, function* () {
     try {
-        const isUserExist = yield user_model_1.default.findOne({ email }).select('+password');
+        const isUserExist = yield user_model_1.default.findOne({ email }).select("+password +isDeleted");
         // if (!isUserExist) {
         //   return done(null, false, { message: "User does not exist" });
         // }
         if (!isUserExist) {
             return done("User does not exist");
+        }
+        // Check if user is deleted
+        if (isUserExist.isDeleted) {
+            return done("Your account has been deleted. Please contact administrator.");
         }
         // Check if user has Google authentication but no password
         const isGoogleAuthenticated = isUserExist.auths.some((providerObjects) => providerObjects.provider === "google");
@@ -70,6 +74,11 @@ passport_1.default.use(new passport_google_oauth20_1.Strategy({
             return done(null, false, { message: "No email found" });
         }
         let user = yield user_model_1.default.findOne({ email });
+        if (user === null || user === void 0 ? void 0 : user.isDeleted) {
+            return done(null, false, {
+                message: "Your account has been deleted. Please contact administrator.",
+            });
+        }
         if (!user) {
             // Parse state to get role
             let role = user_interface_1.Role.SENDER; // Default fallback

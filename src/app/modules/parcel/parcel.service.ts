@@ -108,7 +108,7 @@ const createParcel = async (
   return newParcel;
 };
 
-// GET ALL PARCELS BY SENDER
+// GET ALL PARCELS BY SENDER 
 const getParcelsBySender = async (senderId: string) => {
   const parcels = await Parcel.find({ senderId }).sort({ createdAt: -1 });
   const total = await Parcel.countDocuments({ senderId });
@@ -138,7 +138,7 @@ const getParcelById = async (parcelId: string, userId: string) => {
   return parcel;
 };
 
-// GET PARCEL BY TRACKING ID - Guest only
+// GET PARCEL BY TRACKING ID - public
 const getParcelByTrackingId = async (
   trackingId: string,
   isAuthenticated: boolean

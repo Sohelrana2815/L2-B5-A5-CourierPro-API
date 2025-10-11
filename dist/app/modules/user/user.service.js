@@ -43,9 +43,8 @@ const createUser = (payload) => __awaiter(void 0, void 0, void 0, function* () {
         providerId: email,
     };
     const user = yield user_model_1.default.create(Object.assign({ password: hashedPassword, email, auths: [authProvider] }, rest));
-    const createdObj = user.toObject();
-    const { password: _pwd } = createdObj, userWithoutPassword = __rest(createdObj, ["password"]);
-    return userWithoutPassword;
+    const userObj = user.toObject();
+    return { name: userObj.name };
 });
 const updateUser = (userId, payload, decodedToken) => __awaiter(void 0, void 0, void 0, function* () {
     const isUserExist = yield user_model_1.default.findById(userId);
@@ -97,11 +96,15 @@ const getAllUsers = () => __awaiter(void 0, void 0, void 0, function* () {
 });
 // ADMIN: Block user
 const blockUser = (userId) => __awaiter(void 0, void 0, void 0, function* () {
-    const user = yield user_model_1.default.findByIdAndUpdate(userId, { accountStatus: "BLOCKED" }, { new: true });
+    const user = yield user_model_1.default.findById(userId).select("+isDeleted");
     if (!user) {
         throw new AppError_1.default(http_status_codes_1.default.NOT_FOUND, "User not found!");
     }
-    return user;
+    if (user.isDeleted) {
+        throw new AppError_1.default(http_status_codes_1.default.BAD_REQUEST, "Cannot block a deleted user!");
+    }
+    const updatedUser = yield user_model_1.default.findByIdAndUpdate(userId, { accountStatus: "BLOCKED" }, { new: true });
+    return updatedUser;
 });
 // ADMIN: Unblock user
 const unblockUser = (userId) => __awaiter(void 0, void 0, void 0, function* () {
@@ -113,30 +116,53 @@ const unblockUser = (userId) => __awaiter(void 0, void 0, void 0, function* () {
 });
 // ADMIN: Soft delete user
 const softDeleteUser = (userId) => __awaiter(void 0, void 0, void 0, function* () {
-    const user = yield user_model_1.default.findByIdAndUpdate(userId, { isDeleted: true }, { new: true });
+    const user = yield user_model_1.default.findById(userId);
     if (!user) {
         throw new AppError_1.default(http_status_codes_1.default.NOT_FOUND, "User not found!");
     }
-    return user;
+    if (user.isDeleted) {
+        throw new AppError_1.default(http_status_codes_1.default.BAD_REQUEST, "User is already deleted!");
+    }
+    const updatedUser = yield user_model_1.default.findByIdAndUpdate(userId, { isDeleted: true }, { new: true });
+    return updatedUser;
 });
 // ADMIN: Restore soft deleted user
 const restoreUser = (userId) => __awaiter(void 0, void 0, void 0, function* () {
-    const user = yield user_model_1.default.findByIdAndUpdate(userId, { isDeleted: false }, { new: true });
+    const user = yield user_model_1.default.findById(userId);
     if (!user) {
         throw new AppError_1.default(http_status_codes_1.default.NOT_FOUND, "User not found!");
     }
-    return user;
+    if (!user.isDeleted) {
+        throw new AppError_1.default(http_status_codes_1.default.BAD_REQUEST, "User is not deleted!");
+    }
+    const updatedUser = yield user_model_1.default.findByIdAndUpdate(userId, { isDeleted: false }, { new: true });
+    return updatedUser;
 });
 // ADMIN: Bulk soft delete users
 const bulkSoftDeleteUsers = (userIds) => __awaiter(void 0, void 0, void 0, function* () {
-    const result = yield user_model_1.default.updateMany({ _id: { $in: userIds } }, { isDeleted: true });
-    if (result.matchedCount === 0) {
+    // First, check which users are already deleted
+    const alreadyDeletedUsers = yield user_model_1.default.find({
+        _id: { $in: userIds },
+        isDeleted: true
+    }).select('_id name');
+    // Filter out already deleted users from the update operation
+    const usersToDelete = userIds.filter(id => !alreadyDeletedUsers.some(user => user._id.toString() === id));
+    const result = yield user_model_1.default.updateMany({
+        _id: { $in: usersToDelete },
+        isDeleted: { $ne: true } // Additional safety check
+    }, { isDeleted: true });
+    if (result.matchedCount === 0 && alreadyDeletedUsers.length === 0) {
         throw new AppError_1.default(http_status_codes_1.default.NOT_FOUND, "No users found to delete!");
     }
     return {
         message: `${result.modifiedCount} users soft deleted successfully`,
         deletedCount: result.modifiedCount,
-        matchedCount: result.matchedCount,
+        alreadyDeletedCount: alreadyDeletedUsers.length,
+        alreadyDeletedUsers: alreadyDeletedUsers.map(user => ({
+            id: user._id,
+            name: user.name
+        })),
+        matchedCount: result.matchedCount + alreadyDeletedUsers.length,
     };
 });
 // ADMIN: Promote user to admin

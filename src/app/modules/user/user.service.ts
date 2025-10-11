@@ -119,17 +119,26 @@ const getAllUsers = async () => {
 
 // ADMIN: Block user
 const blockUser = async (userId: string) => {
-  const user = await User.findByIdAndUpdate(
-    userId,
-    { accountStatus: "BLOCKED" },
-    { new: true }
-  );
+  const user = await User.findById(userId).select("+isDeleted");
 
   if (!user) {
     throw new AppError(httpStatus.NOT_FOUND, "User not found!");
   }
 
-  return user;
+  if (user.isDeleted) {
+    throw new AppError(
+      httpStatus.BAD_REQUEST,
+      "Cannot block a deleted user!"
+    );
+  }
+
+  const updatedUser = await User.findByIdAndUpdate(
+    userId,
+    { accountStatus: "BLOCKED" },
+    { new: true }
+  );
+
+  return updatedUser;
 };
 
 // ADMIN: Unblock user
@@ -149,49 +158,86 @@ const unblockUser = async (userId: string) => {
 
 // ADMIN: Soft delete user
 const softDeleteUser = async (userId: string) => {
-  const user = await User.findByIdAndUpdate(
+  const user = await User.findById(userId);
+
+  if (!user) {
+    throw new AppError(httpStatus.NOT_FOUND, "User not found!");
+  }
+
+  if (user.isDeleted) {
+    throw new AppError(
+      httpStatus.BAD_REQUEST,
+      "User is already deleted!"
+    );
+  }
+
+  const updatedUser = await User.findByIdAndUpdate(
     userId,
     { isDeleted: true },
     { new: true }
   );
 
-  if (!user) {
-    throw new AppError(httpStatus.NOT_FOUND, "User not found!");
-  }
-
-  return user;
+  return updatedUser;
 };
 
 // ADMIN: Restore soft deleted user
 const restoreUser = async (userId: string) => {
-  const user = await User.findByIdAndUpdate(
+  const user = await User.findById(userId);
+
+  if (!user) {
+    throw new AppError(httpStatus.NOT_FOUND, "User not found!");
+  }
+
+  if (!user.isDeleted) {
+    throw new AppError(
+      httpStatus.BAD_REQUEST,
+      "User is not deleted!"
+    );
+  }
+
+  const updatedUser = await User.findByIdAndUpdate(
     userId,
     { isDeleted: false },
     { new: true }
   );
 
-  if (!user) {
-    throw new AppError(httpStatus.NOT_FOUND, "User not found!");
-  }
-
-  return user;
+  return updatedUser;
 };
 
 // ADMIN: Bulk soft delete users
 const bulkSoftDeleteUsers = async (userIds: string[]) => {
+  // First, check which users are already deleted
+  const alreadyDeletedUsers = await User.find({
+    _id: { $in: userIds },
+    isDeleted: true
+  }).select('_id name');
+
+  // Filter out already deleted users from the update operation
+  const usersToDelete = userIds.filter(id =>
+    !alreadyDeletedUsers.some(user => user._id.toString() === id)
+  );
+
   const result = await User.updateMany(
-    { _id: { $in: userIds } },
+    {
+      _id: { $in: usersToDelete },
+      isDeleted: { $ne: true } // Additional safety check
+    },
     { isDeleted: true }
   );
 
-  if (result.matchedCount === 0) {
+  if (result.matchedCount === 0 && alreadyDeletedUsers.length === 0) {
     throw new AppError(httpStatus.NOT_FOUND, "No users found to delete!");
   }
 
   return {
     message: `${result.modifiedCount} users soft deleted successfully`,
     deletedCount: result.modifiedCount,
-    matchedCount: result.matchedCount,
+    alreadyDeletedCount: alreadyDeletedUsers.length,
+    alreadyDeletedUsers: alreadyDeletedUsers.map(user => ({
+      id: user._id,
+      name: user.name
+    })),
+    matchedCount: result.matchedCount + alreadyDeletedUsers.length,
   };
 };
 

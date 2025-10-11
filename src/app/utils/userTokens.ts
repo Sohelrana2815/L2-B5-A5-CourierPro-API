@@ -38,7 +38,7 @@ export const createNewAccessTokenWithRefreshToken = async (
     envVars.JWT_REFRESH_SECRET
   ) as JwtPayload;
 
-  const isUserExist = await User.findOne({ email: verifiedRefreshToken.email });
+  const isUserExist = await User.findOne({ email: verifiedRefreshToken.email }).select("+isDeleted");
 
   if (!isUserExist) {
     throw new AppError(httpStatus.BAD_REQUEST, "User does not exist!");

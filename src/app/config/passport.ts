@@ -19,7 +19,7 @@ passport.use(
     },
     async (email: string, password: string, done) => {
       try {
-        const isUserExist = await User.findOne({ email }).select('+password');
+        const isUserExist = await User.findOne({ email }).select("+password +isDeleted");
 
         // if (!isUserExist) {
         //   return done(null, false, { message: "User does not exist" });
@@ -27,6 +27,13 @@ passport.use(
 
         if (!isUserExist) {
           return done("User does not exist");
+        }
+
+        // Check if user is deleted
+        if (isUserExist.isDeleted) {
+          return done(
+            "Your account has been deleted. Please contact administrator."
+          );
         }
 
         // Check if user has Google authentication but no password
@@ -57,7 +64,8 @@ passport.use(
 
         // If no password and no Google auth, this shouldn't happen but handle it
         return done(null, false, {
-          message: "This account doesn't have a password set. Please contact administrator.",
+          message:
+            "This account doesn't have a password set. Please contact administrator.",
         });
       } catch (error) {
         console.log(error);
@@ -90,6 +98,13 @@ passport.use(
         }
 
         let user = await User.findOne({ email });
+
+        if (user?.isDeleted) {
+          return done(null, false, {
+            message:
+              "Your account has been deleted. Please contact administrator.",
+          });
+        }
 
         if (!user) {
           // Parse state to get role

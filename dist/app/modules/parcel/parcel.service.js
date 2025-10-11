@@ -37,13 +37,29 @@ const validateStatusTransition = (currentStatus, newStatus, userRole) => {
         },
         ADMIN: {
             [parcel_interface_1.ParcelStatus.APPROVED]: [parcel_interface_1.ParcelStatus.PICKED_UP],
-            [parcel_interface_1.ParcelStatus.PICKED_UP]: [parcel_interface_1.ParcelStatus.IN_TRANSIT, parcel_interface_1.ParcelStatus.ON_HOLD, parcel_interface_1.ParcelStatus.RETURNED],
-            [parcel_interface_1.ParcelStatus.IN_TRANSIT]: [parcel_interface_1.ParcelStatus.DELIVERED, parcel_interface_1.ParcelStatus.ON_HOLD, parcel_interface_1.ParcelStatus.RETURNED],
+            [parcel_interface_1.ParcelStatus.PICKED_UP]: [
+                parcel_interface_1.ParcelStatus.IN_TRANSIT,
+                parcel_interface_1.ParcelStatus.ON_HOLD,
+                parcel_interface_1.ParcelStatus.RETURNED,
+            ],
+            [parcel_interface_1.ParcelStatus.IN_TRANSIT]: [
+                parcel_interface_1.ParcelStatus.DELIVERED,
+                parcel_interface_1.ParcelStatus.ON_HOLD,
+                parcel_interface_1.ParcelStatus.RETURNED,
+            ],
             [parcel_interface_1.ParcelStatus.DELIVERED]: [], // Final status - no further transitions
             [parcel_interface_1.ParcelStatus.CANCELLED]: [], // Final status - no further transitions
             [parcel_interface_1.ParcelStatus.RETURNED]: [], // Final status - no further transitions
-            [parcel_interface_1.ParcelStatus.ON_HOLD]: [parcel_interface_1.ParcelStatus.PICKED_UP, parcel_interface_1.ParcelStatus.IN_TRANSIT, parcel_interface_1.ParcelStatus.RETURNED],
-            [parcel_interface_1.ParcelStatus.REQUESTED]: [parcel_interface_1.ParcelStatus.APPROVED, parcel_interface_1.ParcelStatus.ON_HOLD, parcel_interface_1.ParcelStatus.CANCELLED],
+            [parcel_interface_1.ParcelStatus.ON_HOLD]: [
+                parcel_interface_1.ParcelStatus.PICKED_UP,
+                parcel_interface_1.ParcelStatus.IN_TRANSIT,
+                parcel_interface_1.ParcelStatus.RETURNED,
+            ],
+            [parcel_interface_1.ParcelStatus.REQUESTED]: [
+                parcel_interface_1.ParcelStatus.APPROVED,
+                parcel_interface_1.ParcelStatus.ON_HOLD,
+                parcel_interface_1.ParcelStatus.CANCELLED,
+            ],
         },
     };
     const roleTransitions = allowedTransitions[userRole] || {};
@@ -83,7 +99,7 @@ const createParcel = (senderId, payload) => __awaiter(void 0, void 0, void 0, fu
     });
     return newParcel;
 });
-// GET ALL PARCELS BY SENDER
+// GET ALL PARCELS BY SENDER 
 const getParcelsBySender = (senderId) => __awaiter(void 0, void 0, void 0, function* () {
     const parcels = yield parcel_model_1.default.find({ senderId }).sort({ createdAt: -1 });
     const total = yield parcel_model_1.default.countDocuments({ senderId });
@@ -104,7 +120,7 @@ const getParcelById = (parcelId, userId) => __awaiter(void 0, void 0, void 0, fu
     }
     return parcel;
 });
-// GET PARCEL BY TRACKING ID - Guest only
+// GET PARCEL BY TRACKING ID - public
 const getParcelByTrackingId = (trackingId, isAuthenticated) => __awaiter(void 0, void 0, void 0, function* () {
     // If user is authenticated, throw error directing them to use authenticated routes
     if (isAuthenticated) {
@@ -114,8 +130,9 @@ const getParcelByTrackingId = (trackingId, isAuthenticated) => __awaiter(void 0,
     if (!parcel) {
         throw new AppError_1.default(http_status_codes_1.default.NOT_FOUND, "Parcel not found!");
     }
+    const parcelObject = parcel.toObject();
     return {
-        parcel,
+        statusHistory: parcelObject.statusHistory,
     };
 });
 // GET PARCEL BY TRACKING ID AND RECEIVER PHONE (for guest receivers only)

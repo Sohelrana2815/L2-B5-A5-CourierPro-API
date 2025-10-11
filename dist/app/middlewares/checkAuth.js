@@ -33,7 +33,7 @@ const checkAuth = (authRoles, customErrorMessage) => (req, res, next) => __await
         if (!verifiedToken) {
             throw new AppError_1.default(http_status_codes_1.default.FORBIDDEN, `You are not authorized! ${verifiedToken}`);
         }
-        const isUserExist = yield user_model_1.default.findOne({ email: verifiedToken.email });
+        const isUserExist = yield user_model_1.default.findOne({ email: verifiedToken.email }).select("+isDeleted");
         if (!isUserExist) {
             throw new AppError_1.default(http_status_codes_1.default.BAD_REQUEST, "User does not exist!");
         }

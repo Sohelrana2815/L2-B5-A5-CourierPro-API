@@ -32,7 +32,7 @@ export const checkAuth =
         );
       }
 
-      const isUserExist = await User.findOne({ email: verifiedToken.email });
+      const isUserExist = await User.findOne({ email: verifiedToken.email }).select("+isDeleted");
 
       if (!isUserExist) {
         throw new AppError(httpStatus.BAD_REQUEST, "User does not exist!");

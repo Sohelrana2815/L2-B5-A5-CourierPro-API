@@ -44,7 +44,7 @@ const userSchema = new Schema<IUser>(
       index: true,
     },
     isVerified: { type: Boolean, default: false },
-    isDeleted: { type: Boolean, default: false, select: false },
+    isDeleted: { type: Boolean, default: false },
     auths: [authProviderSchema],
   },
   {
