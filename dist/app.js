@@ -11,8 +11,15 @@ const cookie_parser_1 = __importDefault(require("cookie-parser"));
 const passport_1 = __importDefault(require("passport"));
 const express_session_1 = __importDefault(require("express-session"));
 require("./app/config/passport");
+const env_1 = require("./app/config/env");
+const cors_1 = __importDefault(require("cors"));
 const app = (0, express_1.default)();
 app.use(express_1.default.json());
+app.set("trust proxy", 1);
+app.use((0, cors_1.default)({
+    origin: env_1.envVars.FRONTEND_URL,
+    credentials: true,
+}));
 app.use((0, express_session_1.default)({
     secret: "Your secret",
     resave: false,

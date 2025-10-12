@@ -6,10 +6,18 @@ import cookieParser from "cookie-parser";
 import passport from "passport";
 import expressSession from "express-session";
 import "./app/config/passport";
+import { envVars } from "./app/config/env";
+import cors from "cors";
 const app = express();
 
-app.use(express.json())
-
+app.use(express.json());
+app.set("trust proxy", 1);
+app.use(
+  cors({
+    origin: envVars.FRONTEND_URL,
+    credentials: true,
+  })
+);
 app.use(
   expressSession({
     secret: "Your secret",
@@ -20,7 +28,6 @@ app.use(
 app.use(passport.initialize());
 app.use(passport.session());
 app.use(cookieParser());
-
 app.use("/api/v1", router);
 
 app.get("/", (req: Request, res: Response) => {
