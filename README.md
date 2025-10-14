@@ -82,6 +82,19 @@ A comprehensive **Express.js** and **TypeScript** backend API for a courier deli
 
 ## 🚀 Quick Start
 
+### Live API
+The API is deployed and accessible at:
+```
+https://l2-b5-a5-courier-pro-api.vercel.app/
+```
+
+### Admin Credentials
+Use these credentials to access admin features:
+```
+Email: admin@gmail.com
+Password: 12345678
+```
+
 ### Prerequisites
 - **Node.js** (v16 or higher)
 - **MongoDB** (local or cloud instance)
@@ -160,7 +173,11 @@ NODE_ENV=development
 
 ### Base URL
 ```
+# Local Development
 http://localhost:5000/api/v1
+
+# Production
+https://l2-b5-a5-courier-pro-api.vercel.app/api/v1
 ```
 
 ### 🔐 Authentication Endpoints
