@@ -17,6 +17,7 @@ app.use(
     origin: [
       envVars.FRONTEND_URL,
       "https://l2-b5-a6-courier-pro-api-frontend.vercel.app",
+      "http://localhost:3000",
     ],
     credentials: true,
   })

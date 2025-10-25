@@ -20,6 +20,7 @@ app.use((0, cors_1.default)({
     origin: [
         env_1.envVars.FRONTEND_URL,
         "https://l2-b5-a6-courier-pro-api-frontend.vercel.app",
+        "http://localhost:3000",
     ],
     credentials: true,
 }));
