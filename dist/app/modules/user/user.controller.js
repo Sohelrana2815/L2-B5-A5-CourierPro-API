@@ -18,10 +18,22 @@ const user_service_1 = require("./user.service");
 const catchAsync_1 = require("../../utils/catchAsync");
 const sendResponse_1 = require("../../utils/sendResponse");
 const AppError_1 = __importDefault(require("../../errorHelpers/AppError"));
+// GET ME
+const getMyProfile = (0, catchAsync_1.catchAsync)((req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
+    const user = req.user;
+    const myProfile = yield user_service_1.UserServices.getMyProfile(user.userId);
+    (0, sendResponse_1.sendResponse)(res, {
+        success: true,
+        statusCode: http_status_codes_1.default.OK,
+        message: "User profile retrieved successfully",
+        data: myProfile,
+    });
+}));
 // ADMIN: Block user
 const blockUser = (0, catchAsync_1.catchAsync)((req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
     const userId = req.params.id;
-    const user = yield user_service_1.UserServices.blockUser(userId);
+    const adminUser = req.user;
+    const user = yield user_service_1.UserServices.blockUser(userId, adminUser.userId);
     (0, sendResponse_1.sendResponse)(res, {
         success: true,
         statusCode: http_status_codes_1.default.OK,
@@ -32,7 +44,8 @@ const blockUser = (0, catchAsync_1.catchAsync)((req, res, next) => __awaiter(voi
 // ADMIN: Unblock user
 const unblockUser = (0, catchAsync_1.catchAsync)((req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
     const userId = req.params.id;
-    const user = yield user_service_1.UserServices.unblockUser(userId);
+    const adminUser = req.user;
+    const user = yield user_service_1.UserServices.unblockUser(userId, adminUser.userId);
     (0, sendResponse_1.sendResponse)(res, {
         success: true,
         statusCode: http_status_codes_1.default.OK,
@@ -131,4 +144,5 @@ exports.UserControllers = {
     restoreUser,
     bulkSoftDeleteUsers,
     promoteUserToAdmin,
+    getMyProfile,
 };

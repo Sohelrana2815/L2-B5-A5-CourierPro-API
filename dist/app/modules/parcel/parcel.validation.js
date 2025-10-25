@@ -3,7 +3,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getIncomingParcelsByPhoneZodSchema = exports.blockUnblockParcelZodSchema = exports.cancelParcelByReceiverZodSchema = exports.approveParcelByReceiverZodSchema = exports.getParcelByTrackingIdAndPhoneZodSchema = exports.cancelParcelZodSchema = exports.updateParcelZodSchema = exports.updateParcelStatusZodSchema = exports.createParcelZodSchema = void 0;
+exports.updateReceiverProfileZodSchema = exports.blockUnblockParcelZodSchema = exports.cancelParcelByReceiverZodSchema = exports.approveParcelByReceiverZodSchema = exports.cancelParcelZodSchema = exports.updateParcelZodSchema = exports.updateParcelStatusZodSchema = exports.createParcelZodSchema = void 0;
 const zod_1 = __importDefault(require("zod"));
 const parcel_interface_1 = require("./parcel.interface");
 // // Receiver Info Schema
@@ -50,7 +50,7 @@ const parcelDetailsSchema = zod_1.default.object({
     description: zod_1.default
         .string({ error: "Description is required" })
         .min(5, { error: "Description must be at least 5 characters" })
-        .max(500, { error: "Description cannot exceed 500 characters" })
+        .max(200, { error: "Description cannot exceed 200 characters" })
         .trim(),
 });
 // // Create Parcel Schema
@@ -80,45 +80,22 @@ exports.updateParcelZodSchema = zod_1.default.object({
 // // Cancel Parcel Schema (for sender)
 exports.cancelParcelZodSchema = zod_1.default.object({
     note: zod_1.default
-        .string()
-        .max(500, { error: "Note cannot exceed 500 characters" })
-        .trim()
-        .optional(),
-});
-// // Get Parcel by Tracking ID and Phone Schema (for guest receivers)
-exports.getParcelByTrackingIdAndPhoneZodSchema = zod_1.default.object({
-    phone: zod_1.default
-        .string({ error: "Receiver phone is required" })
-        .regex(/^(?:\+?88)?01[3-9]\d{8}$/, {
-        error: "Invalid Bangladeshi mobile number",
-    })
+        .string({ error: "Cancellation note is required" })
+        .min(10, { error: "Cancellation note must be at least 10 characters" })
+        .max(100, { error: "Note cannot exceed 100 characters" })
         .trim(),
 });
 // // Receiver Approve Parcel Schema
-exports.approveParcelByReceiverZodSchema = zod_1.default.object({
-    // For guest receivers - phone is required if not authenticated
-    phone: zod_1.default
-        .string()
-        .regex(/^(?:\+?88)?01[3-9]\d{8}$/, {
-        error: "Invalid Bangladeshi mobile number",
-    })
-        .optional(), // Optional for registered receivers
-});
+exports.approveParcelByReceiverZodSchema = zod_1.default.object({});
 // // Receiver Cancel Parcel Schema
 exports.cancelParcelByReceiverZodSchema = zod_1.default.object({
-    // For guest receivers - phone is required if not authenticated
-    phone: zod_1.default
-        .string()
-        .regex(/^(?:\+?88)?01[3-9]\d{8}$/, {
-        error: "Invalid Bangladeshi mobile number",
-    })
-        .optional(), // Optional for registered receivers
     note: zod_1.default
         .string()
         .max(500, { error: "Note cannot exceed 500 characters" })
         .trim()
         .optional(),
 });
+// Block or Unblock parcel by Admin
 exports.blockUnblockParcelZodSchema = zod_1.default.object({
     note: zod_1.default
         .string()
@@ -126,11 +103,25 @@ exports.blockUnblockParcelZodSchema = zod_1.default.object({
         .trim()
         .optional(),
 });
-exports.getIncomingParcelsByPhoneZodSchema = zod_1.default.object({
+// // Update Receiver Profile Schema
+exports.updateReceiverProfileZodSchema = zod_1.default.object({
     phone: zod_1.default
-        .string({ error: "Receiver phone is required" })
+        .string()
         .regex(/^(?:\+?88)?01[3-9]\d{8}$/, {
-        error: "Invalid Bangladeshi mobile number",
+        message: "Invalid Bangladeshi mobile number",
     })
-        .trim(),
+        .trim()
+        .optional(),
+    address: zod_1.default
+        .string()
+        .min(10, { message: "Address must be at least 10 characters" })
+        .max(200, { message: "Address cannot exceed 200 characters" })
+        .trim()
+        .optional(),
+    city: zod_1.default
+        .string()
+        .min(2, { message: "City name must be at least 2 characters" })
+        .max(50, { message: "City name cannot exceed 50 characters" })
+        .trim()
+        .optional(),
 });

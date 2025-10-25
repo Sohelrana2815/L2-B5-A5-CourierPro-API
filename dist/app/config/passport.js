@@ -25,16 +25,16 @@ passport_1.default.use(new passport_local_1.Strategy({
     passwordField: "password",
 }, (email, password, done) => __awaiter(void 0, void 0, void 0, function* () {
     try {
-        const isUserExist = yield user_model_1.default.findOne({ email }).select("+password +isDeleted");
+        const isUserExist = yield user_model_1.default.findOne({ email }).select("+password +isDeleted +isBlocked");
         // if (!isUserExist) {
         //   return done(null, false, { message: "User does not exist" });
         // }
         if (!isUserExist) {
             return done("User does not exist");
         }
-        // Check if user is deleted
-        if (isUserExist.isDeleted) {
-            return done("Your account has been deleted. Please contact administrator.");
+        // Check if user is blocked
+        if (isUserExist.isBlocked) {
+            return done("Your account has been blocked. Please contact administrator.");
         }
         // Check if user has Google authentication but no password
         const isGoogleAuthenticated = isUserExist.auths.some((providerObjects) => providerObjects.provider === "google");
@@ -77,6 +77,11 @@ passport_1.default.use(new passport_google_oauth20_1.Strategy({
         if (user === null || user === void 0 ? void 0 : user.isDeleted) {
             return done(null, false, {
                 message: "Your account has been deleted. Please contact administrator.",
+            });
+        }
+        if (user === null || user === void 0 ? void 0 : user.isBlocked) {
+            return done(null, false, {
+                message: "Your account has been blocked. Please contact administrator.",
             });
         }
         if (!user) {

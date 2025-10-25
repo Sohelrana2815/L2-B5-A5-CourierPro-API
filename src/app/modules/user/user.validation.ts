@@ -1,77 +1,62 @@
 import z from "zod";
 import { Role } from "./user.interface";
 
-export const createUserZodSchema = z
-  .object({
-    // Name
-    name: z
-      .string({ error: "Name must be string and required!" })
-      .min(3, { error: "Name is too short. Minimum 3 characters long" })
-      .max(50, { error: "Name is too long. Maximum 50 characters" }),
-    // Email
-    email: z
-      .email()
-      .min(6, { error: "Email must be at least 6 characters long" })
-      .max(50, { error: "Email cannot exceed 50 characters" }),
-    // Password
+export const createUserZodSchema = z.object({
+  // Name
+  name: z
+    .string({ error: "Name must be string and required!" })
+    .min(3, { error: "Name is too short. Minimum 3 characters long" })
+    .max(50, { error: "Name is too long. Maximum 50 characters" }),
+  // Email
+  email: z
+    .email()
+    .min(6, { error: "Email must be at least 6 characters long" })
+    .max(50, { error: "Email cannot exceed 50 characters" }),
+  // Password
 
-    password: z
-      .string()
-      .min(8, { message: "Password must be at least 8 characters" })
-      // Must have at least 1 uppercase letter
-      .regex(/^(?=.*[A-Z]).+$/, {
-        message: "Password must contain at least 1 uppercase letter",
-      })
-      // Must have at least 1 digit
-      .regex(/^(?=.*\d).+$/, {
-        message: "Password must contain at least one digit",
-      })
-      // Must have at least 1 special character (!@#$%^&*)
-      .regex(/^(?=.*[!@#$%^&*]).+$/, {
-        message:
-          "Password must contain at least one special character (!@#$%^&*)",
-      })
-      .optional(), // Keep optional to align with IUser
+  password: z
+    .string()
+    .min(8, { message: "Password must be at least 8 characters" })
+    // Must have at least 1 uppercase letter
+    .regex(/^(?=.*[A-Z]).+$/, {
+      message: "Password must contain at least 1 uppercase letter",
+    })
+    // Must have at least 1 digit
+    .regex(/^(?=.*\d).+$/, {
+      message: "Password must contain at least one digit",
+    })
+    // Must have at least 1 special character (!@#$%^&*)
+    .regex(/^(?=.*[!@#$%^&*]).+$/, {
+      message:
+        "Password must contain at least one special character (!@#$%^&*)",
+    })
+    .optional(), // Keep optional to align with IUser
 
-    phone: z
-      .string()
-      .regex(/^(?:\+?88)?01[3-9]\d{8}$/, {
-        error: "Invalid Bangladeshi mobile number",
-      })
-      .optional(),
-    // Address
-    address: z
-      .string({ error: "Address must be string" })
-      .max(200, {
-        error: "Address cannot exceed 200 characters",
-      })
-      .optional(),
-    // City
-    city: z
-      .string({ error: "City must be string" })
-      .min(2, { error: "City name must be at least 2 characters" })
-      .max(50, { error: "City name cannot exceed 50 characters" })
-      .optional(),
+  phone: z
+    .string()
+    .regex(/^(?:\+?88)?01[3-9]\d{8}$/, {
+      error: "Invalid Bangladeshi mobile number",
+    })
+    .optional(),
+  // Address
+  address: z
+    .string({ error: "Address must be string" })
+    .max(200, {
+      error: "Address cannot exceed 200 characters",
+    })
+    .optional(),
+  // City
+  city: z
+    .string({ error: "City must be string" })
+    .min(2, { error: "City name must be at least 2 characters" })
+    .max(50, { error: "City name cannot exceed 50 characters" })
+    .optional(),
 
-    // Role - Required for registration, only SENDER or RECEIVER allowed
-    role: z.enum([Role.SENDER, Role.RECEIVER], {
-      message: "Role must be either SENDER or RECEIVER",
-    }),
-  })
-  .refine(
-    (data) => {
-      // If role is RECEIVER, phone, address, and city are required
-      if (data.role === Role.RECEIVER) {
-        return data.phone && data.address && data.city;
-      }
-      // For SENDER role, these fields are optional
-      return true;
-    },
-    {
-      message: "Phone, address, and city are required for RECEIVER role",
-      path: ["phone"], // This will show the error on the phone field
-    }
-  );
+  // Role - Required for registration, only SENDER or RECEIVER allowed
+  role: z.enum([Role.SENDER, Role.RECEIVER], {
+    message: "Role must be either SENDER or RECEIVER",
+  }),
+});
 
 export const updateUserZodSchema = z.object({
   // Name

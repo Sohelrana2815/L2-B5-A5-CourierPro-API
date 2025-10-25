@@ -19,7 +19,7 @@ passport.use(
     },
     async (email: string, password: string, done) => {
       try {
-        const isUserExist = await User.findOne({ email }).select("+password +isDeleted");
+        const isUserExist = await User.findOne({ email }).select("+password +isDeleted +isBlocked");
 
         // if (!isUserExist) {
         //   return done(null, false, { message: "User does not exist" });
@@ -29,10 +29,10 @@ passport.use(
           return done("User does not exist");
         }
 
-        // Check if user is deleted
-        if (isUserExist.isDeleted) {
+        // Check if user is blocked
+        if (isUserExist.isBlocked) {
           return done(
-            "Your account has been deleted. Please contact administrator."
+            "Your account has been blocked. Please contact administrator."
           );
         }
 
@@ -103,6 +103,13 @@ passport.use(
           return done(null, false, {
             message:
               "Your account has been deleted. Please contact administrator.",
+          });
+        }
+
+        if (user?.isBlocked) {
+          return done(null, false, {
+            message:
+              "Your account has been blocked. Please contact administrator.",
           });
         }
 

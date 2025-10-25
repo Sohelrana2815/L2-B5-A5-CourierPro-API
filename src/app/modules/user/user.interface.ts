@@ -28,6 +28,7 @@ export interface IUser {
   city?: string;
   picture?: string;
   accountStatus?: IsActive;
+  isBlocked?: boolean;
   isDeleted?: boolean;
   isVerified?: boolean;
   auths: IAuthProvider[];

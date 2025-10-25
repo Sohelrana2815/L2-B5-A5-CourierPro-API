@@ -24,6 +24,15 @@ router.get(
   UserControllers.getAllUsers
 );
 
+// GET ME
+router.get(
+  "/me",
+  checkAuth(
+    [...Object.values(Role)],
+    "User must be logged in to access profile"
+  ),
+  UserControllers.getMyProfile
+);
 // ADMIN: Bulk soft delete users (placed before parameterized routes to avoid route collision)
 router.patch(
   "/bulk-soft-delete",
@@ -41,28 +50,28 @@ router.patch(
 
 // ADMIN: Block user
 router.patch(
-  "/:id/block",
+  "/block/:id",
   checkAuth(Role.ADMIN, "Only ADMIN can block users"),
   UserControllers.blockUser
 );
 
 // ADMIN: Unblock user
 router.patch(
-  "/:id/unblock",
+  "/unblock/:id",
   checkAuth(Role.ADMIN, "Only ADMIN can unblock users"),
   UserControllers.unblockUser
 );
 
 // ADMIN: Soft delete user
 router.patch(
-  "/:id/soft-delete",
+  "/soft-delete/:id",
   checkAuth(Role.ADMIN, "Only ADMIN can soft delete users"),
   UserControllers.softDeleteUser
 );
 
 // ADMIN: Restore soft deleted user
 router.patch(
-  "/:id/restore",
+  "/restore/:id",
   checkAuth(Role.ADMIN, "Only ADMIN can restore users"),
   UserControllers.restoreUser
 );

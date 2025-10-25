@@ -14,10 +14,13 @@ export const checkAuth =
       const roles = Array.isArray(authRoles) ? authRoles : [authRoles];
 
       // Check both cookie and Authorization header
-      const accessToken = req.cookies?.accessToken || req.headers.authorization;
+      const accessToken =
+        req.cookies?.accessToken || req.headers?.authorization;
 
       if (!accessToken) {
-        throw new AppError(httpStatus.UNAUTHORIZED, "You are not authorized!");
+        // Use custom message if provided, otherwise use generic message
+        const errorMessage = customErrorMessage || "You are not authorized!";
+        throw new AppError(httpStatus.UNAUTHORIZED, errorMessage);
       }
 
       const verifiedToken = verifyToken(
@@ -32,7 +35,9 @@ export const checkAuth =
         );
       }
 
-      const isUserExist = await User.findOne({ email: verifiedToken.email }).select("+isDeleted");
+      const isUserExist = await User.findOne({
+        email: verifiedToken.email,
+      }).select("+isDeleted");
 
       if (!isUserExist) {
         throw new AppError(httpStatus.BAD_REQUEST, "User does not exist!");

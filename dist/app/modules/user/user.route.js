@@ -12,17 +12,19 @@ const router = (0, express_1.Router)();
 router.post("/register", (0, validateRequest_1.validateRequest)(user_validation_1.createUserZodSchema), user_controller_1.UserControllers.createUser);
 // GET ALL USERS
 router.get("/all-users", (0, checkAuth_1.checkAuth)(user_interface_1.Role.ADMIN, "Only ADMIN can view all users"), user_controller_1.UserControllers.getAllUsers);
+// GET ME
+router.get("/me", (0, checkAuth_1.checkAuth)([...Object.values(user_interface_1.Role)], "User must be logged in to access profile"), user_controller_1.UserControllers.getMyProfile);
 // ADMIN: Bulk soft delete users (placed before parameterized routes to avoid route collision)
 router.patch("/bulk-soft-delete", (0, validateRequest_1.validateRequest)(user_validation_1.bulkSoftDeleteUsersZodSchema), (0, checkAuth_1.checkAuth)(user_interface_1.Role.ADMIN, "Only ADMIN can bulk soft delete users"), user_controller_1.UserControllers.bulkSoftDeleteUsers);
 router.patch("/:id", (0, validateRequest_1.validateRequest)(user_validation_1.updateUserZodSchema), (0, checkAuth_1.checkAuth)(user_interface_1.Role.ADMIN, "Only ADMIN can make other user ADMIN"), user_controller_1.UserControllers.updateUser);
 // ADMIN: Block user
-router.patch("/:id/block", (0, checkAuth_1.checkAuth)(user_interface_1.Role.ADMIN, "Only ADMIN can block users"), user_controller_1.UserControllers.blockUser);
+router.patch("/block/:id", (0, checkAuth_1.checkAuth)(user_interface_1.Role.ADMIN, "Only ADMIN can block users"), user_controller_1.UserControllers.blockUser);
 // ADMIN: Unblock user
-router.patch("/:id/unblock", (0, checkAuth_1.checkAuth)(user_interface_1.Role.ADMIN, "Only ADMIN can unblock users"), user_controller_1.UserControllers.unblockUser);
+router.patch("/unblock/:id", (0, checkAuth_1.checkAuth)(user_interface_1.Role.ADMIN, "Only ADMIN can unblock users"), user_controller_1.UserControllers.unblockUser);
 // ADMIN: Soft delete user
-router.patch("/:id/soft-delete", (0, checkAuth_1.checkAuth)(user_interface_1.Role.ADMIN, "Only ADMIN can soft delete users"), user_controller_1.UserControllers.softDeleteUser);
+router.patch("/soft-delete/:id", (0, checkAuth_1.checkAuth)(user_interface_1.Role.ADMIN, "Only ADMIN can soft delete users"), user_controller_1.UserControllers.softDeleteUser);
 // ADMIN: Restore soft deleted user
-router.patch("/:id/restore", (0, checkAuth_1.checkAuth)(user_interface_1.Role.ADMIN, "Only ADMIN can restore users"), user_controller_1.UserControllers.restoreUser);
+router.patch("/restore/:id", (0, checkAuth_1.checkAuth)(user_interface_1.Role.ADMIN, "Only ADMIN can restore users"), user_controller_1.UserControllers.restoreUser);
 // ADMIN: Promote user to admin
 router.patch("/:id/promote-to-admin", (0, checkAuth_1.checkAuth)(user_interface_1.Role.ADMIN, "Only ADMIN can promote users to admin"), user_controller_1.UserControllers.promoteUserToAdmin);
 // ADMIN: Bulk soft delete users

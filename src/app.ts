@@ -14,7 +14,10 @@ app.use(express.json());
 app.set("trust proxy", 1);
 app.use(
   cors({
-    origin: envVars.FRONTEND_URL,
+    origin: [
+      envVars.FRONTEND_URL,
+      "https://l2-b5-a6-courier-pro-api-frontend.vercel.app",
+    ],
     credentials: true,
   })
 );

@@ -6,6 +6,7 @@ import httpStatus from "http-status-codes";
 import bcryptjs from "bcryptjs";
 import { JwtPayload } from "jsonwebtoken";
 import { envVars } from "../../config/env";
+import { Types } from "mongoose";
 
 const createUser = async (payload: Partial<IUser>) => {
   const { email, password, ...rest } = payload;
@@ -14,6 +15,17 @@ const createUser = async (payload: Partial<IUser>) => {
 
   if (isUserExist) {
     throw new AppError(httpStatus.CONFLICT, "User already exist!");
+  }
+
+  // Check if phone number is already registered (if phone is provided)
+  if (payload.phone) {
+    const existingUserWithPhone = await User.findOne({ phone: payload.phone });
+    if (existingUserWithPhone) {
+      throw new AppError(
+        httpStatus.CONFLICT,
+        "Phone number is already registered!"
+      );
+    }
   }
 
   const hashedPassword = await bcryptjs.hash(
@@ -93,11 +105,19 @@ const updateUser = async (
     }
   }
 
-  if (payload.password) {
-    payload.password = await bcryptjs.hash(
-      payload.password as string,
-      Number(envVars.BCRYPT_SALT_ROUND) || 10
-    );
+  if (payload.phone) {
+    // Check if phone number is already registered by another user
+    const existingUserWithPhone = await User.findOne({
+      phone: payload.phone,
+      _id: { $ne: new Types.ObjectId(userId) }, // Exclude current user
+    });
+
+    if (existingUserWithPhone) {
+      throw new AppError(
+        httpStatus.CONFLICT,
+        "Phone number is already registered to another user!"
+      );
+    }
   }
 
   const newUpdatedUser = await User.findByIdAndUpdate(userId, payload, {
@@ -109,16 +129,34 @@ const updateUser = async (
 };
 
 const getAllUsers = async () => {
-  const users = await User.find({ isDeleted: { $ne: true } });
-  const totalUsers = await User.countDocuments({ isDeleted: { $ne: true } });
+  const users = await User.find({});
+  const totalUsers = await User.countDocuments();
   return {
     data: users,
     meta: { total: totalUsers },
   };
 };
 
+// GET ME
+
+const getMyProfile = async (userId: string) => {
+  const user = await User.findById(userId);
+
+  if (!user) {
+    throw new AppError(httpStatus.NOT_FOUND, "User not found!");
+  }
+  const { password, ...rest } = user.toObject();
+  return rest;
+};
+
 // ADMIN: Block user
-const blockUser = async (userId: string) => {
+const blockUser = async (userId: string, adminId: string) => {
+  const admin = await User.findById(adminId);
+
+  if (!admin || admin.role !== Role.ADMIN) {
+    throw new AppError(httpStatus.FORBIDDEN, "Only admins can block users!");
+  }
+
   const user = await User.findById(userId).select("+isDeleted");
 
   if (!user) {
@@ -126,15 +164,16 @@ const blockUser = async (userId: string) => {
   }
 
   if (user.isDeleted) {
-    throw new AppError(
-      httpStatus.BAD_REQUEST,
-      "Cannot block a deleted user!"
-    );
+    throw new AppError(httpStatus.BAD_REQUEST, "Cannot block a deleted user!");
+  }
+
+  if (user.isBlocked) {
+    throw new AppError(httpStatus.BAD_REQUEST, "User is already blocked!");
   }
 
   const updatedUser = await User.findByIdAndUpdate(
     userId,
-    { accountStatus: "BLOCKED" },
+    { isBlocked: true },
     { new: true }
   );
 
@@ -142,18 +181,30 @@ const blockUser = async (userId: string) => {
 };
 
 // ADMIN: Unblock user
-const unblockUser = async (userId: string) => {
-  const user = await User.findByIdAndUpdate(
-    userId,
-    { accountStatus: "ACTIVE" },
-    { new: true }
-  );
+const unblockUser = async (userId: string, adminId: string) => {
+  const admin = await User.findById(adminId);
+
+  if (!admin || admin.role !== Role.ADMIN) {
+    throw new AppError(httpStatus.FORBIDDEN, "Only admins can unblock users!");
+  }
+
+  const user = await User.findById(userId);
 
   if (!user) {
     throw new AppError(httpStatus.NOT_FOUND, "User not found!");
   }
 
-  return user;
+  if (!user.isBlocked) {
+    throw new AppError(httpStatus.BAD_REQUEST, "User is not blocked!");
+  }
+
+  const updatedUser = await User.findByIdAndUpdate(
+    userId,
+    { isBlocked: false },
+    { new: true }
+  );
+
+  return updatedUser;
 };
 
 // ADMIN: Soft delete user
@@ -165,10 +216,7 @@ const softDeleteUser = async (userId: string) => {
   }
 
   if (user.isDeleted) {
-    throw new AppError(
-      httpStatus.BAD_REQUEST,
-      "User is already deleted!"
-    );
+    throw new AppError(httpStatus.BAD_REQUEST, "User is already deleted!");
   }
 
   const updatedUser = await User.findByIdAndUpdate(
@@ -189,10 +237,7 @@ const restoreUser = async (userId: string) => {
   }
 
   if (!user.isDeleted) {
-    throw new AppError(
-      httpStatus.BAD_REQUEST,
-      "User is not deleted!"
-    );
+    throw new AppError(httpStatus.BAD_REQUEST, "User is not deleted!");
   }
 
   const updatedUser = await User.findByIdAndUpdate(
@@ -209,18 +254,18 @@ const bulkSoftDeleteUsers = async (userIds: string[]) => {
   // First, check which users are already deleted
   const alreadyDeletedUsers = await User.find({
     _id: { $in: userIds },
-    isDeleted: true
-  }).select('_id name');
+    isDeleted: true,
+  }).select("_id name");
 
   // Filter out already deleted users from the update operation
-  const usersToDelete = userIds.filter(id =>
-    !alreadyDeletedUsers.some(user => user._id.toString() === id)
+  const usersToDelete = userIds.filter(
+    (id) => !alreadyDeletedUsers.some((user) => user._id.toString() === id)
   );
 
   const result = await User.updateMany(
     {
       _id: { $in: usersToDelete },
-      isDeleted: { $ne: true } // Additional safety check
+      isDeleted: { $ne: true }, // Additional safety check
     },
     { isDeleted: true }
   );
@@ -233,9 +278,9 @@ const bulkSoftDeleteUsers = async (userIds: string[]) => {
     message: `${result.modifiedCount} users soft deleted successfully`,
     deletedCount: result.modifiedCount,
     alreadyDeletedCount: alreadyDeletedUsers.length,
-    alreadyDeletedUsers: alreadyDeletedUsers.map(user => ({
+    alreadyDeletedUsers: alreadyDeletedUsers.map((user) => ({
       id: user._id,
-      name: user.name
+      name: user.name,
     })),
     matchedCount: result.matchedCount + alreadyDeletedUsers.length,
   };
@@ -263,7 +308,7 @@ const promoteUserToAdmin = async (userId: string, adminId: string) => {
     );
   }
 
-  if (targetUser.accountStatus === "BLOCKED") {
+  if (targetUser.isBlocked) {
     throw new AppError(
       httpStatus.BAD_REQUEST,
       "Cannot promote a blocked user to administrator!"
@@ -293,4 +338,5 @@ export const UserServices = {
   restoreUser,
   bulkSoftDeleteUsers,
   promoteUserToAdmin,
+  getMyProfile,
 };

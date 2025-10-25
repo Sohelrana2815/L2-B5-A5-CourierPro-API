@@ -6,8 +6,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.bulkSoftDeleteUsersZodSchema = exports.updateUserZodSchema = exports.createUserZodSchema = void 0;
 const zod_1 = __importDefault(require("zod"));
 const user_interface_1 = require("./user.interface");
-exports.createUserZodSchema = zod_1.default
-    .object({
+exports.createUserZodSchema = zod_1.default.object({
     // Name
     name: zod_1.default
         .string({ error: "Name must be string and required!" })
@@ -58,17 +57,6 @@ exports.createUserZodSchema = zod_1.default
     role: zod_1.default.enum([user_interface_1.Role.SENDER, user_interface_1.Role.RECEIVER], {
         message: "Role must be either SENDER or RECEIVER",
     }),
-})
-    .refine((data) => {
-    // If role is RECEIVER, phone, address, and city are required
-    if (data.role === user_interface_1.Role.RECEIVER) {
-        return data.phone && data.address && data.city;
-    }
-    // For SENDER role, these fields are optional
-    return true;
-}, {
-    message: "Phone, address, and city are required for RECEIVER role",
-    path: ["phone"], // This will show the error on the phone field
 });
 exports.updateUserZodSchema = zod_1.default.object({
     // Name

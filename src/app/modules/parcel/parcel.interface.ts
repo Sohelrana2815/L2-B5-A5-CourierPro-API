@@ -44,4 +44,6 @@ export interface IParcel {
   statusHistory: IStatusLog[];
   isBlocked: boolean;
   expectedDeliveryDate?: Date;
+  createdAt?: Date;
+  updatedAt?: Date;
 }

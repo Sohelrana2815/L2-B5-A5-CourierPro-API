@@ -21,7 +21,7 @@ const userSchema = new mongoose_1.Schema({
         trim: true,
     },
     password: { type: String, select: false, trim: true },
-    phone: { type: String, trim: true },
+    phone: { type: String, trim: true, unique: true, sparse: true },
     address: { type: String, trim: true },
     city: { type: String, trim: true },
     picture: { type: String },
@@ -39,6 +39,7 @@ const userSchema = new mongoose_1.Schema({
     },
     isVerified: { type: Boolean, default: false },
     isDeleted: { type: Boolean, default: false },
+    isBlocked: { type: Boolean, default: false },
     auths: [authProviderSchema],
 }, {
     timestamps: true,

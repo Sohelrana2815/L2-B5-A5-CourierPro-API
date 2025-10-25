@@ -20,20 +20,24 @@ const env_1 = require("../config/env");
 const user_model_1 = __importDefault(require("../modules/user/user.model"));
 const user_interface_1 = require("../modules/user/user.interface");
 const checkAuth = (authRoles, customErrorMessage) => (req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
-    var _a;
+    var _a, _b;
     try {
         // Normalize authRoles to array
         const roles = Array.isArray(authRoles) ? authRoles : [authRoles];
         // Check both cookie and Authorization header
-        const accessToken = ((_a = req.cookies) === null || _a === void 0 ? void 0 : _a.accessToken) || req.headers.authorization;
+        const accessToken = ((_a = req.cookies) === null || _a === void 0 ? void 0 : _a.accessToken) || ((_b = req.headers) === null || _b === void 0 ? void 0 : _b.authorization);
         if (!accessToken) {
-            throw new AppError_1.default(http_status_codes_1.default.UNAUTHORIZED, "You are not authorized!");
+            // Use custom message if provided, otherwise use generic message
+            const errorMessage = customErrorMessage || "You are not authorized!";
+            throw new AppError_1.default(http_status_codes_1.default.UNAUTHORIZED, errorMessage);
         }
         const verifiedToken = (0, jwt_1.verifyToken)(accessToken, env_1.envVars.JWT_ACCESS_SECRET);
         if (!verifiedToken) {
             throw new AppError_1.default(http_status_codes_1.default.FORBIDDEN, `You are not authorized! ${verifiedToken}`);
         }
-        const isUserExist = yield user_model_1.default.findOne({ email: verifiedToken.email }).select("+isDeleted");
+        const isUserExist = yield user_model_1.default.findOne({
+            email: verifiedToken.email,
+        }).select("+isDeleted");
         if (!isUserExist) {
             throw new AppError_1.default(http_status_codes_1.default.BAD_REQUEST, "User does not exist!");
         }

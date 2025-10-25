@@ -51,7 +51,7 @@ const parcelDetailsSchema = z.object({
   description: z
     .string({ error: "Description is required" })
     .min(5, { error: "Description must be at least 5 characters" })
-    .max(500, { error: "Description cannot exceed 500 characters" })
+    .max(200, { error: "Description cannot exceed 200 characters" })
     .trim(),
 });
 
@@ -89,49 +89,25 @@ export const updateParcelZodSchema = z.object({
 
 export const cancelParcelZodSchema = z.object({
   note: z
-    .string()
-    .max(500, { error: "Note cannot exceed 500 characters" })
-    .trim()
-    .optional(),
-});
-
-// // Get Parcel by Tracking ID and Phone Schema (for guest receivers)
-
-export const getParcelByTrackingIdAndPhoneZodSchema = z.object({
-  phone: z
-    .string({ error: "Receiver phone is required" })
-    .regex(/^(?:\+?88)?01[3-9]\d{8}$/, {
-      error: "Invalid Bangladeshi mobile number",
-    })
+    .string({ error: "Cancellation note is required" })
+    .min(10, { error: "Cancellation note must be at least 10 characters" })
+    .max(100, { error: "Note cannot exceed 100 characters" })
     .trim(),
 });
 
 // // Receiver Approve Parcel Schema
-export const approveParcelByReceiverZodSchema = z.object({
-  // For guest receivers - phone is required if not authenticated
-  phone: z
-    .string()
-    .regex(/^(?:\+?88)?01[3-9]\d{8}$/, {
-      error: "Invalid Bangladeshi mobile number",
-    })
-    .optional(), // Optional for registered receivers
-});
+export const approveParcelByReceiverZodSchema = z.object({});
 
 // // Receiver Cancel Parcel Schema
 export const cancelParcelByReceiverZodSchema = z.object({
-  // For guest receivers - phone is required if not authenticated
-  phone: z
-    .string()
-    .regex(/^(?:\+?88)?01[3-9]\d{8}$/, {
-      error: "Invalid Bangladeshi mobile number",
-    })
-    .optional(), // Optional for registered receivers
   note: z
     .string()
     .max(500, { error: "Note cannot exceed 500 characters" })
     .trim()
     .optional(),
 });
+
+// Block or Unblock parcel by Admin
 
 export const blockUnblockParcelZodSchema = z.object({
   note: z
@@ -141,11 +117,27 @@ export const blockUnblockParcelZodSchema = z.object({
     .optional(),
 });
 
-export const getIncomingParcelsByPhoneZodSchema = z.object({
+// // Update Receiver Profile Schema
+export const updateReceiverProfileZodSchema = z.object({
   phone: z
-    .string({ error: "Receiver phone is required" })
+    .string()
     .regex(/^(?:\+?88)?01[3-9]\d{8}$/, {
-      error: "Invalid Bangladeshi mobile number",
+      message: "Invalid Bangladeshi mobile number",
     })
-    .trim(),
+    .trim()
+    .optional(),
+
+  address: z
+    .string()
+    .min(10, { message: "Address must be at least 10 characters" })
+    .max(200, { message: "Address cannot exceed 200 characters" })
+    .trim()
+    .optional(),
+
+  city: z
+    .string()
+    .min(2, { message: "City name must be at least 2 characters" })
+    .max(50, { message: "City name cannot exceed 50 characters" })
+    .trim()
+    .optional(),
 });

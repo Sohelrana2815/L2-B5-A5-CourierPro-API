@@ -7,11 +7,27 @@ import { sendResponse } from "../../utils/sendResponse";
 import AppError from "../../errorHelpers/AppError";
 import { JwtPayload } from "jsonwebtoken";
 
+// GET ME
+
+const getMyProfile = catchAsync(
+  async (req: Request, res: Response, next: NextFunction) => {
+    const user = req.user as JwtPayload;
+    const myProfile = await UserServices.getMyProfile(user.userId);
+    sendResponse(res, {
+      success: true,
+      statusCode: httpStatus.OK,
+      message: "User profile retrieved successfully",
+      data: myProfile,
+    });
+  }
+);
+
 // ADMIN: Block user
 const blockUser = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
     const userId = req.params.id;
-    const user = await UserServices.blockUser(userId);
+    const adminUser = req.user as JwtPayload;
+    const user = await UserServices.blockUser(userId, adminUser.userId);
     sendResponse(res, {
       success: true,
       statusCode: httpStatus.OK,
@@ -25,7 +41,8 @@ const blockUser = catchAsync(
 const unblockUser = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
     const userId = req.params.id;
-    const user = await UserServices.unblockUser(userId);
+    const adminUser = req.user as JwtPayload;
+    const user = await UserServices.unblockUser(userId, adminUser.userId);
     sendResponse(res, {
       success: true,
       statusCode: httpStatus.OK,
@@ -160,4 +177,5 @@ export const UserControllers = {
   restoreUser,
   bulkSoftDeleteUsers,
   promoteUserToAdmin,
+  getMyProfile,
 };

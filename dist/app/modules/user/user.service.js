@@ -31,11 +31,19 @@ const user_model_1 = __importDefault(require("./user.model"));
 const http_status_codes_1 = __importDefault(require("http-status-codes"));
 const bcryptjs_1 = __importDefault(require("bcryptjs"));
 const env_1 = require("../../config/env");
+const mongoose_1 = require("mongoose");
 const createUser = (payload) => __awaiter(void 0, void 0, void 0, function* () {
     const { email, password } = payload, rest = __rest(payload, ["email", "password"]);
     const isUserExist = yield user_model_1.default.findOne({ email });
     if (isUserExist) {
         throw new AppError_1.default(http_status_codes_1.default.CONFLICT, "User already exist!");
+    }
+    // Check if phone number is already registered (if phone is provided)
+    if (payload.phone) {
+        const existingUserWithPhone = yield user_model_1.default.findOne({ phone: payload.phone });
+        if (existingUserWithPhone) {
+            throw new AppError_1.default(http_status_codes_1.default.CONFLICT, "Phone number is already registered!");
+        }
     }
     const hashedPassword = yield bcryptjs_1.default.hash(password, Number(env_1.envVars.BCRYPT_SALT_ROUND) || 10);
     const authProvider = {
@@ -77,8 +85,15 @@ const updateUser = (userId, payload, decodedToken) => __awaiter(void 0, void 0, 
             throw new AppError_1.default(http_status_codes_1.default.BAD_REQUEST, "You are not allowed to update status!");
         }
     }
-    if (payload.password) {
-        payload.password = yield bcryptjs_1.default.hash(payload.password, Number(env_1.envVars.BCRYPT_SALT_ROUND) || 10);
+    if (payload.phone) {
+        // Check if phone number is already registered by another user
+        const existingUserWithPhone = yield user_model_1.default.findOne({
+            phone: payload.phone,
+            _id: { $ne: new mongoose_1.Types.ObjectId(userId) }, // Exclude current user
+        });
+        if (existingUserWithPhone) {
+            throw new AppError_1.default(http_status_codes_1.default.CONFLICT, "Phone number is already registered to another user!");
+        }
     }
     const newUpdatedUser = yield user_model_1.default.findByIdAndUpdate(userId, payload, {
         new: true,
@@ -87,15 +102,28 @@ const updateUser = (userId, payload, decodedToken) => __awaiter(void 0, void 0, 
     return newUpdatedUser;
 });
 const getAllUsers = () => __awaiter(void 0, void 0, void 0, function* () {
-    const users = yield user_model_1.default.find({ isDeleted: { $ne: true } });
-    const totalUsers = yield user_model_1.default.countDocuments({ isDeleted: { $ne: true } });
+    const users = yield user_model_1.default.find({});
+    const totalUsers = yield user_model_1.default.countDocuments();
     return {
         data: users,
         meta: { total: totalUsers },
     };
 });
+// GET ME
+const getMyProfile = (userId) => __awaiter(void 0, void 0, void 0, function* () {
+    const user = yield user_model_1.default.findById(userId);
+    if (!user) {
+        throw new AppError_1.default(http_status_codes_1.default.NOT_FOUND, "User not found!");
+    }
+    const _a = user.toObject(), { password } = _a, rest = __rest(_a, ["password"]);
+    return rest;
+});
 // ADMIN: Block user
-const blockUser = (userId) => __awaiter(void 0, void 0, void 0, function* () {
+const blockUser = (userId, adminId) => __awaiter(void 0, void 0, void 0, function* () {
+    const admin = yield user_model_1.default.findById(adminId);
+    if (!admin || admin.role !== user_interface_1.Role.ADMIN) {
+        throw new AppError_1.default(http_status_codes_1.default.FORBIDDEN, "Only admins can block users!");
+    }
     const user = yield user_model_1.default.findById(userId).select("+isDeleted");
     if (!user) {
         throw new AppError_1.default(http_status_codes_1.default.NOT_FOUND, "User not found!");
@@ -103,16 +131,27 @@ const blockUser = (userId) => __awaiter(void 0, void 0, void 0, function* () {
     if (user.isDeleted) {
         throw new AppError_1.default(http_status_codes_1.default.BAD_REQUEST, "Cannot block a deleted user!");
     }
-    const updatedUser = yield user_model_1.default.findByIdAndUpdate(userId, { accountStatus: "BLOCKED" }, { new: true });
+    if (user.isBlocked) {
+        throw new AppError_1.default(http_status_codes_1.default.BAD_REQUEST, "User is already blocked!");
+    }
+    const updatedUser = yield user_model_1.default.findByIdAndUpdate(userId, { isBlocked: true }, { new: true });
     return updatedUser;
 });
 // ADMIN: Unblock user
-const unblockUser = (userId) => __awaiter(void 0, void 0, void 0, function* () {
-    const user = yield user_model_1.default.findByIdAndUpdate(userId, { accountStatus: "ACTIVE" }, { new: true });
+const unblockUser = (userId, adminId) => __awaiter(void 0, void 0, void 0, function* () {
+    const admin = yield user_model_1.default.findById(adminId);
+    if (!admin || admin.role !== user_interface_1.Role.ADMIN) {
+        throw new AppError_1.default(http_status_codes_1.default.FORBIDDEN, "Only admins can unblock users!");
+    }
+    const user = yield user_model_1.default.findById(userId);
     if (!user) {
         throw new AppError_1.default(http_status_codes_1.default.NOT_FOUND, "User not found!");
     }
-    return user;
+    if (!user.isBlocked) {
+        throw new AppError_1.default(http_status_codes_1.default.BAD_REQUEST, "User is not blocked!");
+    }
+    const updatedUser = yield user_model_1.default.findByIdAndUpdate(userId, { isBlocked: false }, { new: true });
+    return updatedUser;
 });
 // ADMIN: Soft delete user
 const softDeleteUser = (userId) => __awaiter(void 0, void 0, void 0, function* () {
@@ -143,13 +182,13 @@ const bulkSoftDeleteUsers = (userIds) => __awaiter(void 0, void 0, void 0, funct
     // First, check which users are already deleted
     const alreadyDeletedUsers = yield user_model_1.default.find({
         _id: { $in: userIds },
-        isDeleted: true
-    }).select('_id name');
+        isDeleted: true,
+    }).select("_id name");
     // Filter out already deleted users from the update operation
-    const usersToDelete = userIds.filter(id => !alreadyDeletedUsers.some(user => user._id.toString() === id));
+    const usersToDelete = userIds.filter((id) => !alreadyDeletedUsers.some((user) => user._id.toString() === id));
     const result = yield user_model_1.default.updateMany({
         _id: { $in: usersToDelete },
-        isDeleted: { $ne: true } // Additional safety check
+        isDeleted: { $ne: true }, // Additional safety check
     }, { isDeleted: true });
     if (result.matchedCount === 0 && alreadyDeletedUsers.length === 0) {
         throw new AppError_1.default(http_status_codes_1.default.NOT_FOUND, "No users found to delete!");
@@ -158,9 +197,9 @@ const bulkSoftDeleteUsers = (userIds) => __awaiter(void 0, void 0, void 0, funct
         message: `${result.modifiedCount} users soft deleted successfully`,
         deletedCount: result.modifiedCount,
         alreadyDeletedCount: alreadyDeletedUsers.length,
-        alreadyDeletedUsers: alreadyDeletedUsers.map(user => ({
+        alreadyDeletedUsers: alreadyDeletedUsers.map((user) => ({
             id: user._id,
-            name: user.name
+            name: user.name,
         })),
         matchedCount: result.matchedCount + alreadyDeletedUsers.length,
     };
@@ -177,7 +216,7 @@ const promoteUserToAdmin = (userId, adminId) => __awaiter(void 0, void 0, void 0
     if (targetUser.isDeleted) {
         throw new AppError_1.default(http_status_codes_1.default.BAD_REQUEST, "Cannot promote a deleted user to administrator!");
     }
-    if (targetUser.accountStatus === "BLOCKED") {
+    if (targetUser.isBlocked) {
         throw new AppError_1.default(http_status_codes_1.default.BAD_REQUEST, "Cannot promote a blocked user to administrator!");
     }
     // Update user role to ADMIN
@@ -197,4 +236,5 @@ exports.UserServices = {
     restoreUser,
     bulkSoftDeleteUsers,
     promoteUserToAdmin,
+    getMyProfile,
 };
