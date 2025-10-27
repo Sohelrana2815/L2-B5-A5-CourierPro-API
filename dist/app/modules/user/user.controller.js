@@ -75,6 +75,7 @@ const softDeleteUser = (0, catchAsync_1.catchAsync)((req, res, next) => __awaite
         data: user,
     });
 }));
+// Create user
 const createUser = (0, catchAsync_1.catchAsync)((req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
     const user = yield user_service_1.UserServices.createUser(req.body);
     (0, sendResponse_1.sendResponse)(res, {
@@ -86,7 +87,9 @@ const createUser = (0, catchAsync_1.catchAsync)((req, res, next) => __awaiter(vo
 }));
 // GET ALL USERS
 const getAllUsers = (0, catchAsync_1.catchAsync)((req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
-    const result = yield user_service_1.UserServices.getAllUsers();
+    const page = req.query.page ? Number(req.query.page) : 1;
+    const limit = req.query.limit ? Number(req.query.limit) : 1;
+    const result = yield user_service_1.UserServices.getAllUsers({ page, limit });
     (0, sendResponse_1.sendResponse)(res, {
         success: true,
         statusCode: http_status_codes_1.default.OK,

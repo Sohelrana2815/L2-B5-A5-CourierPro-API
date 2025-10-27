@@ -101,12 +101,27 @@ const updateUser = (userId, payload, decodedToken) => __awaiter(void 0, void 0, 
     });
     return newUpdatedUser;
 });
-const getAllUsers = () => __awaiter(void 0, void 0, void 0, function* () {
-    const users = yield user_model_1.default.find({});
-    const totalUsers = yield user_model_1.default.countDocuments();
+// GET ALL USERS
+const getAllUsers = (...args_1) => __awaiter(void 0, [...args_1], void 0, function* ({ page = 1, limit = 10, } = {}) {
+    // Math.max(1,...) ensures that page number can't be smaller than 1 like default number is 1
+    const pageNumber = Math.max(1, Math.floor(Number(page) || 1));
+    const parsedLimit = Math.max(1, Math.min(100, Math.floor(Number(limit) || 10))); // max cap 100
+    // Skip = (pageNumber -1) * parsedLimit
+    const skip = (pageNumber - 1) * parsedLimit;
+    // Fetch two things users and total users count
+    const [users, totalUsers] = yield Promise.all([
+        user_model_1.default.find({}).sort({ createdAt: -1 }).skip(skip).limit(parsedLimit).lean(),
+        user_model_1.default.countDocuments({}),
+    ]);
+    const totalPages = Math.max(1, Math.ceil(totalUsers / parsedLimit));
     return {
         data: users,
-        meta: { total: totalUsers },
+        meta: {
+            total: totalUsers,
+            page: pageNumber,
+            limit: parsedLimit,
+            totalPages,
+        },
     };
 });
 // GET ME

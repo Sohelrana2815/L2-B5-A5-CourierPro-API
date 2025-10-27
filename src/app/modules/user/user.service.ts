@@ -164,7 +164,7 @@ const getAllUsers = async ({
   return {
     data: users,
     meta: {
-      totalUsers,
+      total: totalUsers,
       page: pageNumber,
       limit: parsedLimit,
       totalPages,

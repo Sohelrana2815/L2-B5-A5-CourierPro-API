@@ -79,6 +79,7 @@ const softDeleteUser = catchAsync(
     });
   }
 );
+// Create user
 const createUser = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
     const user = await UserServices.createUser(req.body);
@@ -94,7 +95,11 @@ const createUser = catchAsync(
 // GET ALL USERS
 const getAllUsers = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
-    const result = await UserServices.getAllUsers();
+    const page = req.query.page ? Number(req.query.page) : 1;
+    const limit = req.query.limit ? Number(req.query.limit) : 1;
+
+    const result = await UserServices.getAllUsers({ page, limit });
+
     sendResponse(res, {
       success: true,
       statusCode: httpStatus.OK,
