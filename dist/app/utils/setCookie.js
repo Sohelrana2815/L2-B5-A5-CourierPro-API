@@ -1,22 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.setAuthCookie = void 0;
-const setAuthCookie = (res, tokenInfo) => {
-    if (tokenInfo.accessToken) {
-        res.cookie("accessToken", tokenInfo.accessToken, {
-            httpOnly: true,
-            secure: true, // Set to true in production with HTTPS
-            sameSite: "none",
-            maxAge: 24 * 60 * 60 * 1000, // 24 hours
-        });
-    }
-    if (tokenInfo.refreshToken) {
-        res.cookie("refreshToken", tokenInfo.refreshToken, {
-            httpOnly: true,
-            secure: true, // Set to true in production with HTTPS
-            sameSite: "none",
-            maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
-        });
-    }
-};
-exports.setAuthCookie = setAuthCookie;
+exports.clearAuthCookie = exports.setAuthCookie = void 0;
+const cookieConfig_1 = require("./cookieConfig");
+Object.defineProperty(exports, "setAuthCookie", { enumerable: true, get: function () { return cookieConfig_1.setAuthCookie; } });
+Object.defineProperty(exports, "clearAuthCookie", { enumerable: true, get: function () { return cookieConfig_1.clearAuthCookie; } });

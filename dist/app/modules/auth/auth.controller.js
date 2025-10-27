@@ -77,16 +77,7 @@ const getNewAccessToken = (0, catchAsync_1.catchAsync)((req, res, next) => __awa
     });
 }));
 const logout = (0, catchAsync_1.catchAsync)((req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
-    res.clearCookie("accessToken", {
-        httpOnly: true,
-        secure: false,
-        sameSite: "lax",
-    });
-    res.clearCookie("refreshToken", {
-        httpOnly: true,
-        secure: false,
-        sameSite: "lax",
-    });
+    (0, setCookie_1.clearAuthCookie)(res);
     (0, sendResponse_1.sendResponse)(res, {
         success: true,
         statusCode: http_status_codes_1.default.OK,
@@ -129,7 +120,7 @@ const googleCallbackController = (0, catchAsync_1.catchAsync)((req, res, next) =
     }
     const tokenInfo = (0, userTokens_1.createUserTokens)(user);
     (0, setCookie_1.setAuthCookie)(res, tokenInfo);
-    res.redirect(`${env_1.envVars.FRONTEND_URL}/${redirectTo}`);
+    res.redirect(`${env_1.envVars.FRONTEND_LOCAL_URL || env_1.envVars.FRONTEND_LIVE_URL}/${redirectTo}`);
 }));
 exports.AuthControllers = {
     credentialsLogin,

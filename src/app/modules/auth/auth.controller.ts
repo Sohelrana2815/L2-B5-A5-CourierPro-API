@@ -6,7 +6,7 @@ import { sendResponse } from "../../utils/sendResponse";
 import httpStatus from "http-status-codes";
 import { AuthServices } from "./auth.service";
 import AppError from "../../errorHelpers/AppError";
-import { setAuthCookie } from "../../utils/setCookie";
+import { clearAuthCookie, setAuthCookie } from "../../utils/setCookie";
 import { JwtPayload } from "jsonwebtoken";
 import { createUserTokens } from "../../utils/userTokens";
 import { envVars } from "../../config/env";
@@ -38,7 +38,6 @@ const credentialsLogin = catchAsync(
       }
       const userTokens = createUserTokens(user);
 
- 
       // const { password: pass, ...rest } = user.toObject();
 
       const userObj = user.toObject();
@@ -84,17 +83,7 @@ const getNewAccessToken = catchAsync(
 
 const logout = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
-    res.clearCookie("accessToken", {
-      httpOnly: true,
-      secure: false,
-      sameSite: "lax",
-    });
-
-    res.clearCookie("refreshToken", {
-      httpOnly: true,
-      secure: false,
-      sameSite: "lax",
-    });
+    clearAuthCookie(res);
 
     sendResponse(res, {
       success: true,
@@ -156,7 +145,9 @@ const googleCallbackController = catchAsync(
 
     setAuthCookie(res, tokenInfo);
 
-    res.redirect(`${envVars.FRONTEND_URL}/${redirectTo}`);
+    res.redirect(
+      `${envVars.FRONTEND_LOCAL_URL || envVars.FRONTEND_LIVE_URL}/${redirectTo}`
+    );
   }
 );
 

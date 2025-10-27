@@ -8,6 +8,13 @@ import { JwtPayload } from "jsonwebtoken";
 import { envVars } from "../../config/env";
 import { Types } from "mongoose";
 
+// pagination options type
+
+interface PaginationOptions {
+  page?: number;
+  limit?: number;
+}
+
 const createUser = async (payload: Partial<IUser>) => {
   const { email, password, ...rest } = payload;
 
@@ -128,12 +135,40 @@ const updateUser = async (
   return newUpdatedUser;
 };
 
-const getAllUsers = async () => {
-  const users = await User.find({});
-  const totalUsers = await User.countDocuments();
+// GET ALL USERS
+
+const getAllUsers = async ({
+  page = 1,
+  limit = 10,
+}: PaginationOptions = {}) => {
+  // Math.max(1,...) ensures that page number can't be smaller than 1 like default number is 1
+
+  const pageNumber = Math.max(1, Math.floor(Number(page) || 1));
+  const parsedLimit = Math.max(
+    1,
+    Math.min(100, Math.floor(Number(limit) || 10))
+  ); // max cap 100
+  // Skip = (pageNumber -1) * parsedLimit
+
+  const skip = (pageNumber - 1) * parsedLimit;
+
+  // Fetch two things users and total users count
+
+  const [users, totalUsers] = await Promise.all([
+    User.find({}).sort({ createdAt: -1 }).skip(skip).limit(parsedLimit).lean(),
+    User.countDocuments({}),
+  ]);
+
+  const totalPages = Math.max(1, Math.ceil(totalUsers / parsedLimit));
+
   return {
     data: users,
-    meta: { total: totalUsers },
+    meta: {
+      totalUsers,
+      page: pageNumber,
+      limit: parsedLimit,
+      totalPages,
+    },
   };
 };
 
