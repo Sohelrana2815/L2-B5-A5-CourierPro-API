@@ -95,15 +95,41 @@ const createUser = catchAsync(
 // GET ALL USERS
 const getAllUsers = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
+    // parse page/limit
     const page = req.query.page ? Number(req.query.page) : 1;
-    const limit = req.query.limit ? Number(req.query.limit) : 1;
+    const limit = req.query.limit ? Number(req.query.limit) : 10;
 
-    const result = await UserServices.getAllUsers({ page, limit });
+    const isBlockedQuery =
+      typeof req.query.isBlocked === "undefined"
+        ? undefined
+        : String(req.query.isBlocked);
+    const isDeletedQuery =
+      typeof req.query.isDeleted === "undefined"
+        ? undefined
+        : String(req.query.isDeleted);
+
+    const roleQuery =
+      typeof req.query.role === "undefined"
+        ? undefined
+        : String(req.query.role);
+    const sortQuery =
+      typeof req.query.sort === "undefined"
+        ? undefined
+        : String(req.query.sort);
+
+    const result = await UserServices.getAllUsers({
+      page,
+      limit,
+      isBlocked: isBlockedQuery,
+      isDeleted: isDeletedQuery,
+      role: roleQuery,
+      sort: sortQuery,
+    });
 
     sendResponse(res, {
       success: true,
       statusCode: httpStatus.OK,
-      message: "All Users Retrieved successfully",
+      message: "User retrieved successfully",
       data: result.data,
       meta: result.meta,
     });

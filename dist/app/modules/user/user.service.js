@@ -102,16 +102,36 @@ const updateUser = (userId, payload, decodedToken) => __awaiter(void 0, void 0, 
     return newUpdatedUser;
 });
 // GET ALL USERS
-const getAllUsers = (...args_1) => __awaiter(void 0, [...args_1], void 0, function* ({ page = 1, limit = 10, } = {}) {
-    // Math.max(1,...) ensures that page number can't be smaller than 1 like default number is 1
+const getAllUsers = (...args_1) => __awaiter(void 0, [...args_1], void 0, function* ({ page = 1, limit = 10, isBlocked, isDeleted, role, sort, } = {}) {
     const pageNumber = Math.max(1, Math.floor(Number(page) || 1));
-    const parsedLimit = Math.max(1, Math.min(100, Math.floor(Number(limit) || 10))); // max cap 100
-    // Skip = (pageNumber -1) * parsedLimit
+    const parsedLimit = Math.max(1, Math.min(100, Math.floor(Number(limit) || 10)));
     const skip = (pageNumber - 1) * parsedLimit;
-    // Fetch two things users and total users count
+    // build filter object
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const filter = {};
+    if (typeof isBlocked !== "undefined") {
+        filter.isBlocked =
+            typeof isBlocked === "string" ? isBlocked === "true" : Boolean(isBlocked);
+    }
+    if (typeof isDeleted !== "undefined") {
+        filter.isDeleted =
+            typeof isDeleted === "string" ? isDeleted === "true" : Boolean(isDeleted);
+    }
+    if (role) {
+        const normalized = String(role).toUpperCase();
+        if (["SENDER", "RECEIVER", "ADMIN"].includes(normalized))
+            filter.role = normalized;
+    }
+    // sort handling: default = newest first (desc)
+    const sortNormalized = String(sort || "new").toLowerCase();
+    const createdAtSort = sortNormalized === "old" ? 1 : -1;
     const [users, totalUsers] = yield Promise.all([
-        user_model_1.default.find({}).sort({ createdAt: -1 }).skip(skip).limit(parsedLimit).lean(),
-        user_model_1.default.countDocuments({}),
+        user_model_1.default.find(filter)
+            .sort({ createdAt: createdAtSort })
+            .skip(skip)
+            .limit(parsedLimit)
+            .lean(),
+        user_model_1.default.countDocuments(filter),
     ]);
     const totalPages = Math.max(1, Math.ceil(totalUsers / parsedLimit));
     return {
