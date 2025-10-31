@@ -120,7 +120,7 @@ const googleCallbackController = (0, catchAsync_1.catchAsync)((req, res, next) =
     }
     const tokenInfo = (0, userTokens_1.createUserTokens)(user);
     (0, setCookie_1.setAuthCookie)(res, tokenInfo);
-    res.redirect(`${env_1.envVars.FRONTEND_LOCAL_URL || env_1.envVars.FRONTEND_LIVE_URL}/${redirectTo}`);
+    res.redirect(env_1.envVars.FRONTEND_LOCAL_URL + "/" + redirectTo);
 }));
 exports.AuthControllers = {
     credentialsLogin,

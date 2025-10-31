@@ -145,9 +145,7 @@ const googleCallbackController = catchAsync(
 
     setAuthCookie(res, tokenInfo);
 
-    res.redirect(
-      `${envVars.FRONTEND_LOCAL_URL || envVars.FRONTEND_LIVE_URL}/${redirectTo}`
-    );
+    res.redirect(envVars.FRONTEND_LOCAL_URL + "/" + redirectTo);
   }
 );
 
